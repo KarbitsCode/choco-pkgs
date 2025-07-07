@@ -1,2 +1,2 @@
-# chocolatey-packages
-Chocolatey packages collection repository
+# choco-pkgs
+Chocolatey package collection repository
