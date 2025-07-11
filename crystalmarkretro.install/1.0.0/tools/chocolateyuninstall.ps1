@@ -1,8 +1,7 @@
 ﻿$ErrorActionPreference = 'Stop'
 
 # $name: CrystalMark Retro (Install) -> CrystalMark Retro
-$name = $env:ChocolateyPackageTitle -replace '\s*\(.*?\)', '' 
-$version = $env:ChocolateyPackageVersion
+$name = $env:ChocolateyPackageTitle -replace '\s*\(.*?\)', ''
 
 $packageArgs = @{
   packageName   = $env:ChocolateyPackageName
@@ -21,7 +20,7 @@ if ($key.Count -eq 1) {
     if ($packageArgs['fileType'] -eq 'MSI') {
       $packageArgs['silentArgs'] = "$($_.PSChildName) $($packageArgs['silentArgs'])"
       $packageArgs['file'] = ''
-    } else {}
+    }
 
     Uninstall-ChocolateyPackage @packageArgs
   }

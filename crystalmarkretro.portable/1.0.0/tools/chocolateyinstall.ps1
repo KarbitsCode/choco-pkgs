@@ -2,10 +2,11 @@
 $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 # $name: CrystalMark Retro (Install) -> CrystalMark Retro
-$name = $env:ChocolateyPackageTitle -replace '\s*\(.*?\)', '' 
-$shortName = $($name -replace '\s+', '')
-$version = $env:ChocolateyPackageVersion
-$fileLocation = Join-Path $toolsDir "$($shortName)$($version -replace '\.', '_').zip"
+$name = $env:ChocolateyPackageTitle -replace '\s*\(.*?\)', ''
+# $fileName: CrystalMark Retro -> CrystalMarkRetro
+$fileName = $($name -replace '\s+', '')
+$version = 1.0.0
+$fileLocation = Join-Path $toolsDir "$($fileName)$($version -replace '\.', '_').zip"
 
 $packageArgs = @{
   packageName   = $env:ChocolateyPackageName
@@ -22,11 +23,11 @@ Get-ChildItem $toolsDir\*.zip -Recurse:$false | ForEach-Object { Remove-Item $_ 
 # For shim executable
 $osArch = (Get-WmiObject Win32_OperatingSystem | Select OSArchitecture).OSArchitecture
 if ($osArch -eq "ARM 64-bit") {
-  $exePath = "$($shortName)A64.exe"
+  $exePath = "$($fileName)A64.exe"
 } elseif ($osArch -eq "64-bit") {
-  $exePath = "$($shortName)64.exe"
+  $exePath = "$($fileName)64.exe"
 } else {
-  $exePath = "$($shortName)32.exe"
+  $exePath = "$($fileName)32.exe"
 }
 
-Install-BinFile -Name $shortName -Path (Join-Path -Path $toolsDir -ChildPath $exePath)
+Install-BinFile -Name $fileName -Path (Join-Path -Path $toolsDir -ChildPath $exePath)
