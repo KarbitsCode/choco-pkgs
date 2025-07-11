@@ -16,7 +16,14 @@ $packageArgs = @{
 }
 
 Get-ChocolateyUnzip @packageArgs
-Get-ChildItem $toolsDir\*.zip -Recurse:$false | ForEach-Object { Remove-Item $_ -ea 0; if (Test-Path $_) { Set-Content "$_.ignore" } }
+
+Get-ChildItem "$toolsDir\*.zip" -Recurse:$false | ForEach-Object {
+  Remove-Item $_ -ErrorAction SilentlyContinue
+  if (Test-Path $_) {
+    Write-Debug "Failed to delete: $($_.FullName)"
+    Set-Content "$($_.FullName).ignore" -Value '' -Force
+  }
+}
 
 # For executable shim
 $osArch = (Get-WmiObject Win32_OperatingSystem | Select OSArchitecture).OSArchitecture
@@ -34,6 +41,8 @@ Install-BinFile -Name $fileName -Path (Join-Path -Path $toolsDir -ChildPath $exe
 Get-ChildItem -Path "$toolsDir\Resource" -Recurse -Filter *.exe | ForEach-Object {
   $ignoreFile = "$($_.FullName).ignore"
   if (-not (Test-Path $ignoreFile)) {
-    New-Item -Path $ignoreFile -ItemType File -Force | Out-Null
+    New-Item -Path $ignoreFile -ItemType File -Force | ForEach-Object {
+      Write-Debug "Adding ignore file: $($_.FullName)"
+    }
   }
 }

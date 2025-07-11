@@ -18,4 +18,11 @@ $packageArgs = @{
 }
 
 Install-ChocolateyInstallPackage @packageArgs
-Get-ChildItem $toolsDir\*.exe -Recurse:$false | ForEach-Object { Remove-Item $_ -ea 0; if (Test-Path $_) { Set-Content "$_.ignore" } }
+
+Get-ChildItem "$toolsDir\*.exe" -Recurse:$false | ForEach-Object {
+  Remove-Item $_ -ErrorAction SilentlyContinue
+  if (Test-Path $_) {
+    Write-Debug "Failed to delete: $($_.FullName)"
+    Set-Content "$($_.FullName).ignore" -Value '' -Force
+  }
+}
