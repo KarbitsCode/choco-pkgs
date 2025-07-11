@@ -2,9 +2,11 @@
 $toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 # $name: CrystalMark Retro (Install) -> CrystalMark Retro
-$name = $env:ChocolateyPackageTitle -replace '\s*\(.*?\)', '' 
-$version = 1.0.0
-$fileLocation = Join-Path $toolsDir "$($name -replace '\s+', '')$($version -replace '\.', '_').exe"
+$name = $($env:ChocolateyPackageTitle -replace '\s*\(.*?\)', '')
+# $fileName: CrystalMark Retro -> CrystalMarkRetro
+$fileName = $($name -replace '\s+', '')
+$version = '1.0.0'
+$fileLocation = Join-Path $toolsDir "$($fileName)$($version -replace '\.', '_').exe"
 
 $packageArgs = @{
   packageName   = $env:ChocolateyPackageName
