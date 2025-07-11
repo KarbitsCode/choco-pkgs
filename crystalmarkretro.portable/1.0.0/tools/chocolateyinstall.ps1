@@ -1,5 +1,5 @@
 ﻿$ErrorActionPreference = 'Stop'
-$toolsDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
+$toolsDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 # $name: CrystalMark Retro (Install) -> CrystalMark Retro
 $name = $($env:ChocolateyPackageTitle -replace '\s*\(.*?\)', '')
@@ -13,14 +13,12 @@ $packageArgs = @{
   unzipLocation = $toolsDir
   file          = $fileLocation
   softwareName  = "$name*"
-  checksum      = '53E626D3AA88FAE753256ED49C76366B5D607F7F722D0C0EDC9A94CA72E05FC8'
-  checksumType  = 'sha256'
 }
 
-Install-ChocolateyZipPackage @packageArgs
+Get-ChocolateyUnzip @packageArgs
 Get-ChildItem $toolsDir\*.zip -Recurse:$false | ForEach-Object { Remove-Item $_ -ea 0; if (Test-Path $_) { Set-Content "$_.ignore" } }
 
-# For shim executable
+# For executable shim
 $osArch = (Get-WmiObject Win32_OperatingSystem | Select OSArchitecture).OSArchitecture
 if ($osArch -eq "ARM 64-bit") {
   $exePath = "$($fileName)A64.exe"
@@ -31,3 +29,11 @@ if ($osArch -eq "ARM 64-bit") {
 }
 
 Install-BinFile -Name $fileName -Path (Join-Path -Path $toolsDir -ChildPath $exePath)
+
+# Prevent unnecessary recursive shims
+Get-ChildItem -Path "$toolsDir\Resource" -Recurse -Filter *.exe | ForEach-Object {
+  $ignoreFile = "$($_.FullName).ignore"
+  if (-not (Test-Path $ignoreFile)) {
+    New-Item -Path $ignoreFile -ItemType File -Force | Out-Null
+  }
+}
