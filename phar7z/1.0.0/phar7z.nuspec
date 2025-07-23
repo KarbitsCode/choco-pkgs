@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>phar7z</id>
+    <version>1.0.0</version>
+    <packageSourceUrl>https://github.com/KarbitsCode/choco-pkgs/tree/main/phar7z/1.0.0</packageSourceUrl>
+    <owners>KarbitsCode</owners>
+    <title>phar7z (Install)</title>
+    <authors>KarbitsCode</authors>
+    <projectUrl>https://www.tc4shell.com/en/7zip/phar7z/</projectUrl>
+    <!--<iconUrl>http://rawcdn.githack.com/__REPLACE_YOUR_REPO__/master/icons/phar7z.png</iconUrl>-->
+    <copyright>2020 Dec Software</copyright>
+    <licenseUrl>https://www.tc4shell.com/en/termsofuse/</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://www.tc4shell.com/en/7zip/</projectSourceUrl>
+    <!--<docsUrl>At what url are the software docs located?</docsUrl>-->
+    <!--<mailingListUrl></mailingListUrl>-->
+    <!--<bugTrackerUrl></bugTrackerUrl>-->
+    <tags>phar7z 7z 7zip 7-zip phar plugin</tags>
+    <summary>Phar7z is a 7-Zip plugin that allows you to open, modify, or create .phar archives</summary>
+    <description>Phar7z is a small plugin for the popular 7-Zip archiver. You can use Phar7z with 7-Zip to open, modify, or create .phar archives, which are used to enable distribution of applications and libraries by bundling many PHP code files and other resources (e.g. images, stylesheets, etc.) into a single archive file.</description>
+    <releaseNotes>Current version
+    
+Plugin version: 1.0
+Distribution package release date: 20 Jan 2022</releaseNotes>
+    <dependencies>
+      <dependency id="7zip" version="23.01" />
+    </dependencies>
+    <!-- chocolatey-core.extension - https://community.chocolatey.org/packages/chocolatey-core.extension -->
+    <!--<provides>NOT YET IMPLEMENTED</provides>-->
+    <!--<conflicts>NOT YET IMPLEMENTED</conflicts>-->
+    <!--<replaces>NOT YET IMPLEMENTED</replaces>-->
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
