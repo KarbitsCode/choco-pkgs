@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>py7z</id>
+    <version>1.2.1</version>
+    <packageSourceUrl>https://github.com/KarbitsCode/choco-pkgs/tree/main/py7z/1.2.1</packageSourceUrl>
+    <owners>KarbitsCode</owners>
+    <title>py7z (Install)</title>
+    <authors>KarbitsCode</authors>
+    <projectUrl>https://www.tc4shell.com/en/7zip/py7z/</projectUrl>
+    <!--<iconUrl>http://rawcdn.githack.com/__REPLACE_YOUR_REPO__/master/icons/py7z.png</iconUrl>-->
+    <copyright>2020 Dec Software</copyright>
+    <licenseUrl>https://www.tc4shell.com/en/termsofuse/</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://www.tc4shell.com/en/7zip/</projectSourceUrl>
+    <!--<docsUrl>At what url are the software docs located?</docsUrl>-->
+    <!--<mailingListUrl></mailingListUrl>-->
+    <!--<bugTrackerUrl></bugTrackerUrl>-->
+    <tags>py7z 7z 7zip 7-zip py plugin</tags>
+    <summary>Py7z is a 7-Zip plugin that allows you to open PyInstaller archives</summary>
+    <description>Py7z is a small plugin for the popular 7-Zip archiver. You can use Py7z with 7-Zip to open PyInstaller archives, which are used to enable distribution of applications by bundling many python code files and other resources into a single executable file.</description>
+    <releaseNotes>Current version
+    
+Plugin version: 1.2.1
+Distribution package release date: 19 Aug 2023</releaseNotes>
+    <dependencies>
+      <dependency id="7zip" version="23.01" />
+    </dependencies>
+    <!-- chocolatey-core.extension - https://community.chocolatey.org/packages/chocolatey-core.extension -->
+    <!--<provides>NOT YET IMPLEMENTED</provides>-->
+    <!--<conflicts>NOT YET IMPLEMENTED</conflicts>-->
+    <!--<replaces>NOT YET IMPLEMENTED</replaces>-->
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
