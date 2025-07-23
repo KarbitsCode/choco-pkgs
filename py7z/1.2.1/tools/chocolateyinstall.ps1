@@ -39,7 +39,7 @@ if ((Get-OSArchitectureWidth 64) -and $env:chocolateyForceX86 -ne $true) {
     $extractLocationArch = Join-Path $extractLocation '*.32.dll'
 }
 
-Get-ChildItem -Recurse $extractLocationArch -Name -File | ConvertTo-Json | Out-File $env:ChocolateyPackageFolder\tools\installed.json
+Get-ChildItem -Recurse $extractLocationArch -Name -File | ConvertTo-Json | Out-File $toolsDir\installed.json
 Copy-Item "$($extractLocationArch)" "$($installLocation)" -Recurse -Force
 
 Get-ChildItem "$toolsDir\*.zip" -Recurse:$false | ForEach-Object {
