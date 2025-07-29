@@ -6,7 +6,7 @@
     <packageSourceUrl>https://github.com/KarbitsCode/choco-pkgs/tree/main/phar7z/1.0.0</packageSourceUrl>
     <owners>KarbitsCode</owners>
     <title>phar7z (Install)</title>
-    <authors>KarbitsCode</authors>
+    <authors>Dec Software</authors>
     <projectUrl>https://www.tc4shell.com/en/7zip/phar7z/</projectUrl>
     <!--<iconUrl>http://rawcdn.githack.com/__REPLACE_YOUR_REPO__/master/icons/phar7z.png</iconUrl>-->
     <copyright>2020 Dec Software</copyright>

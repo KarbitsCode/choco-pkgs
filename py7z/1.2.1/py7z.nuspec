@@ -6,7 +6,7 @@
     <packageSourceUrl>https://github.com/KarbitsCode/choco-pkgs/tree/main/py7z/1.2.1</packageSourceUrl>
     <owners>KarbitsCode</owners>
     <title>py7z (Install)</title>
-    <authors>KarbitsCode</authors>
+    <authors>Dec Software</authors>
     <projectUrl>https://www.tc4shell.com/en/7zip/py7z/</projectUrl>
     <!--<iconUrl>http://rawcdn.githack.com/__REPLACE_YOUR_REPO__/master/icons/py7z.png</iconUrl>-->
     <copyright>2020 Dec Software</copyright>
