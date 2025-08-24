@@ -18,6 +18,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5.0.0
 
+      - name: Enable Windows Update
+        shell: pwsh
+        run: |
+          # PowerShell (as choco-nuspec-checker dependency) requires this, see https://github.com/KarbitsCode/choco-pkgs/actions/runs/17194511952/job/48774605367#step:3:28
+          Set-Service -Name 'wuauserv' -StartupType Manual
+          Start-Service -Name 'wuauserv'
+
       - name: Set up chocolatey packages
         uses: crazy-max/ghaction-chocolatey@v3.4.0
         with:
