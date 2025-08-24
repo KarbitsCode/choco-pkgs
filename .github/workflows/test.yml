@@ -1,0 +1,36 @@
+name: choco-pkgs test
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - README.md
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5.0.0
+
+      - name: Set up chocolatey packages
+        uses: crazy-max/ghaction-chocolatey@v3.4.0
+        with:
+          args: upgrade choco-nuspec-checker -y
+
+      - name: Run powershell script
+        shell: pwsh
+        run: |
+          Get-ChildItem -Recurse -Filter *.nuspec | ForEach-Object {
+            $dir = $_.DirectoryName
+            $file = $_.FullName
+            
+            cnc $dir
+            choco pack $file
+          }
+
