@@ -21,23 +21,17 @@ jobs:
       - name: Enable Windows Update
         shell: pwsh
         run: |
-          # PowerShell (as choco-nuspec-checker dependency) requires this, see https://github.com/KarbitsCode/choco-pkgs/actions/runs/17194511952/job/48774605367#step:3:28
+          # PowerShell package (as choco-nuspec-checker dependency) requires this, see https://github.com/KarbitsCode/choco-pkgs/actions/runs/17194511952/job/48774605367#step:3:28
           Set-Service -Name 'wuauserv' -StartupType Manual -Verbose
           Start-Service -Name 'wuauserv' -Verbose -PassThru
 
       - name: Set up chocolatey packages
         uses: crazy-max/ghaction-chocolatey@v3.4.0
         with:
-          args: upgrade choco-nuspec-checker -y
+          args: upgrade choco-nuspec-checker chocolatey-au curl -y
 
       - name: Run powershell script
         shell: pwsh
         run: |
-          Get-ChildItem -Recurse -Filter *.nuspec | ForEach-Object {
-            $dir = $_.DirectoryName
-            $file = $_.FullName
-            
-            cnc $dir
-            choco pack $file
-          }
+          .\test.ps1
 
