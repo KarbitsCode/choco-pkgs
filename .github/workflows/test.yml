@@ -1,4 +1,6 @@
 name: choco-pkgs test
+permissions:
+  contents: read
 on:
   push:
     branches:
