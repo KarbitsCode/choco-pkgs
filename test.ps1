@@ -63,8 +63,7 @@ Get-ChildItem -Path $pkgFolder -Recurse -Filter *.nuspec | ForEach-Object {
 # =================================================================================================
 
 Write-Host "Getting list of packages before install test..." -ForegroundColor Blue
-# The `[1..((choco list).Count - 2)]` will strip the first and last line of choco list output
-$installedBefore = (choco list)[1..((choco list).Count - 2)] | ForEach-Object { ($_ -split ' ')[0] }
+$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
 Get-ChildItem -Path $pkgFolder -Filter *.nupkg | ForEach-Object {
     $filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
@@ -83,7 +82,7 @@ Get-ChildItem -Path $pkgFolder -Filter *.nupkg | ForEach-Object {
 }
 
 Write-Host "Getting list of packages after install test..." -ForegroundColor Blue
-$installedAfter = (choco list)[1..((choco list).Count - 2)] | ForEach-Object { ($_ -split ' ')[0] }
+$installedAfter = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 $newlyInstalled = $installedAfter | Where-Object { $_ -notin $installedBefore }
 
 if ($newlyInstalled.Length -ne 0) {
