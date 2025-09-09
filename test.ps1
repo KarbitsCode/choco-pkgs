@@ -94,13 +94,13 @@ $installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')
 
 Get-ChildItem -Path $pkgFolder -Filter *.nupkg | ForEach-Object {
 	$filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
-	
+
 	# Getting the pkgName and pkgVersion directly from the filename
 	if ($filename -match '^(?<id>.+)\.(?<version>\d+\.\d+\.\d+(-[A-Za-z0-9]+)?)$') {
 		$pkgName = $matches['id']
 		$pkgVersion = $matches['version']
 	}
-	
+
 	# Skipping .install package since it probably already installed by its metapackage
 	if ($pkgName -notlike "*.install") {
 		Write-Color "Installing $pkgName version $pkgVersion..." -Foreground Blue
