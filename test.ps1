@@ -1,5 +1,5 @@
 param (
-	[string]$pkgFolder = "."
+	[string[]]$folderArgs = "."
 )
 
 function Write-Color {
@@ -83,13 +83,15 @@ function Test-Validation-Package {
 	Remove-Item *.nupkg
 	Get-ChildItem -Path $pkgFolder -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" } | Remove-Item
 
-	Get-ChildItem -Path $pkgFolder -Recurse -Filter *.nuspec | ForEach-Object {
-		$dir = $_.DirectoryName
-		$file = $_.FullName
+	foreach ($pkgFolder in $folderArgs) {
+		Get-ChildItem -Path $pkgFolder -Recurse -Filter *.nuspec | ForEach-Object {
+			$dir = $_.DirectoryName
+			$file = $_.FullName
 
-		cnc $dir
-		Download-Installer $dir
-		choco pack $file
+			cnc $dir
+			Download-Installer $dir
+			choco pack $file
+		}
 	}
 }
 
@@ -99,28 +101,35 @@ function Test-Install-Package {
 	Write-Color "Getting list of packages before install test..." -Foreground Blue
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
-	Get-ChildItem -Path "." -Filter *.nupkg | ForEach-Object {
-		$filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
-
-		# Getting the pkgName and pkgVersion directly from the filename
-		if ($filename -match '^(?<id>.+)\.(?<version>\d+\.\d+\.\d+(-[A-Za-z0-9]+)?)$') {
-			$pkgName = $matches['id']
-			$pkgVersion = $matches['version']
+	foreach ($pkgFolder in $folderArgs) {
+		if (-not (Test-Path $pkgFolder)) {
+			Write-Warning "Target folder $pkgFolder does not exist, skipping..."
+			continue
 		}
 
-		# Skipping .install package only if $pkgFolder is set implicitly (or ".")
-		if (
-			($pkgFolder -eq "." -and $pkgName -notlike "*.install") -or
-			($pkgFolder -ne ".")
-		) {
-			Write-Color "Installing $pkgName version $pkgVersion..." -Foreground Blue
-			choco install $pkgName --version=$pkgVersion --source="." --yes --force
+		Get-ChildItem -Path "." -Filter *.nupkg | ForEach-Object {
+			$filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
+
+			# Getting the pkgName and pkgVersion directly from the filename
+			if ($filename -match '^(?<id>.+)\.(?<version>\d+\.\d+\.\d+(-[A-Za-z0-9]+)?)$') {
+				$pkgName = $matches['id']
+				$pkgVersion = $matches['version']
+			}
+
+			# Skipping .install package only if $pkgFolder is set implicitly (or ".")
+			if (
+				($pkgFolder -eq "." -and $pkgName -notlike "*.install") -or
+				($pkgFolder -ne ".")
+			) {
+				Write-Color "Installing $pkgName version $pkgVersion..." -Foreground Blue
+				choco install $pkgName --version=$pkgVersion --source="." --yes --force
+			}
 		}
 	}
 
 	Write-Color "Getting list of packages after install test..." -Foreground Blue
 	$installedAfter = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
-	$newlyInstalled = $installedAfter | Where-Object { $_ -notin $installedBefore }
+	$newlyInstalled = @($installedAfter | Where-Object { $_ -notin $installedBefore })
 
 	if ($newlyInstalled.Length -ne 0) {
 		Write-Color "Uninstalling newly installed packages: $($newlyInstalled -join ', ')" -Foreground Blue
