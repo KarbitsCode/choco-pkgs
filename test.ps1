@@ -1,3 +1,7 @@
+param (
+	[string]$pkgFolder = "."
+)
+
 function Write-Color {
 	[CmdletBinding()]
 	param (
@@ -75,8 +79,7 @@ function Download-Installer {
 
 # =================================================================================================
 
-function Validate-And-Prepare-Package {
-	$pkgFolder = "."
+function Test-Validation-Package {
 	Remove-Item *.nupkg
 	Get-ChildItem -Path $pkgFolder -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" } | Remove-Item
 
@@ -96,7 +99,7 @@ function Test-Install-Package {
 	Write-Color "Getting list of packages before install test..." -Foreground Blue
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
-	Get-ChildItem -Path $pkgFolder -Filter *.nupkg | ForEach-Object {
+	Get-ChildItem -Path "." -Filter *.nupkg | ForEach-Object {
 		$filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
 
 		# Getting the pkgName and pkgVersion directly from the filename
@@ -105,10 +108,13 @@ function Test-Install-Package {
 			$pkgVersion = $matches['version']
 		}
 
-		# Skipping .install package since it probably already installed by its metapackage
-		if ($pkgName -notlike "*.install") {
+		# Skipping .install package only if $pkgFolder is set implicitly (or ".")
+		if (
+			($pkgFolder -eq "." -and $pkgName -notlike "*.install") -or
+			($pkgFolder -ne ".")
+		) {
 			Write-Color "Installing $pkgName version $pkgVersion..." -Foreground Blue
-			choco install $pkgName --version=$pkgVersion --source=$pkgFolder --yes --force
+			choco install $pkgName --version=$pkgVersion --source="." --yes --force
 		}
 	}
 
@@ -128,10 +134,10 @@ function Test-Install-Package {
 }
 
 function Main {
-	Validate-And-Prepare-Package
+	Test-Validation-Package
 	Test-Install-Package
 }
 
 if ((Split-Path -Path $MyInvocation.InvocationName -Leaf) -eq $MyInvocation.MyCommand.Name) {
-    Main
+	Main
 }
