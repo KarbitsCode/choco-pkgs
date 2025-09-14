@@ -1,4 +1,5 @@
 param (
+	[Parameter(ValueFromRemainingArguments = $true)]
 	[string[]]$folderArgs = "."
 )
 
@@ -81,7 +82,7 @@ function Download-Installer {
 
 function Test-Validation-Package {
 	Remove-Item *.nupkg
-	Get-ChildItem -Path $pkgFolder -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" } | Remove-Item
+	Get-ChildItem -Path "." -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" } | Remove-Item
 
 	foreach ($pkgFolder in $folderArgs) {
 		Get-ChildItem -Path $pkgFolder -Recurse -Filter *.nuspec | ForEach-Object {
@@ -101,29 +102,22 @@ function Test-Install-Package {
 	Write-Color "Getting list of packages before install test..." -Foreground Blue
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
-	foreach ($pkgFolder in $folderArgs) {
-		if (-not (Test-Path $pkgFolder)) {
-			Write-Warning "Target folder $pkgFolder does not exist, skipping..."
-			continue
+	Get-ChildItem -Path "." -Filter *.nupkg | ForEach-Object {
+		$filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
+
+		# Getting the pkgName and pkgVersion directly from the filename
+		if ($filename -match '^(?<id>.+)\.(?<version>\d+\.\d+\.\d+(-[A-Za-z0-9]+)?)$') {
+			$pkgName = $matches['id']
+			$pkgVersion = $matches['version']
 		}
 
-		Get-ChildItem -Path "." -Filter *.nupkg | ForEach-Object {
-			$filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
-
-			# Getting the pkgName and pkgVersion directly from the filename
-			if ($filename -match '^(?<id>.+)\.(?<version>\d+\.\d+\.\d+(-[A-Za-z0-9]+)?)$') {
-				$pkgName = $matches['id']
-				$pkgVersion = $matches['version']
-			}
-
-			# Skipping .install package only if $pkgFolder is set implicitly (or ".")
-			if (
-				($pkgFolder -eq "." -and $pkgName -notlike "*.install") -or
-				($pkgFolder -ne ".")
-			) {
-				Write-Color "Installing $pkgName version $pkgVersion..." -Foreground Blue
-				choco install $pkgName --version=$pkgVersion --source="." --yes --force
-			}
+		# Skipping .install package only if $folderArgs is in default value (".")
+		if (
+			(($folderArgs.Count -eq 1 -and $folderArgs[0] -eq ".") -and $pkgName -notlike "*.install") -or
+			($folderArgs.Count -ne 1 -or $folderArgs[0] -ne ".")
+		) {
+			Write-Color "Installing $pkgName version $pkgVersion..." -Foreground Blue
+			choco install $pkgName --version=$pkgVersion --source="." --yes --force
 		}
 	}
 
