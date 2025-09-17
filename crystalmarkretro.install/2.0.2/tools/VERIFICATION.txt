@@ -1,0 +1,15 @@
+﻿VERIFICATION
+Verification is intended to assist the Chocolatey moderators and community
+in verifying that this package's contents are trustworthy.
+
+The installer has been downloaded from the official download link listed on <https://sourceforge.net/projects/crystalmarkretro/files/2.0.2/>
+and can be verified like this:
+
+1. Download the following file:
+  URL: <https://sourceforge.net/projects/crystalmarkretro/files/2.0.2/CrystalMarkRetro2_0_2.exe>
+2. You can use one of the following methods to obtain the checksum
+  - Use powershell function 'Get-Filehash'
+  - Use chocolatey utility 'checksum.exe'
+
+  checksum_type: sha256
+  file_checksum: DA5A95DF847B1357D7572C1D8E4072C3F12923506AC9181CBC4871C9DB9C8F43
