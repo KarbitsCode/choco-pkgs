@@ -26,7 +26,7 @@ Get-ChildItem "$toolsDir\*.zip" -Recurse:$false | ForEach-Object {
 }
 
 # For executable shim
-$osArch = (Get-WmiObject Win32_OperatingSystem | Select OSArchitecture).OSArchitecture
+$osArch = (Get-CimInstance Win32_OperatingSystem | Select-Object -ExpandProperty OSArchitecture)
 if ($osArch -eq "ARM 64-bit") {
   $exePath = "$($fileName)A64.exe"
 } elseif ($osArch -eq "64-bit") {
