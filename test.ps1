@@ -28,7 +28,7 @@ function Write-Color {
 	}
 }
 
-function Download-Installer {
+function Get-Installer {
 	param (
 		[string]$PackageDir
 	)
@@ -90,7 +90,7 @@ function Test-Validation-Package {
 			$file = $_.FullName
 
 			cnc $dir
-			Download-Installer $dir
+			Get-Installer $dir
 			choco pack $file
 		}
 	}
@@ -118,6 +118,8 @@ function Test-Install-Package {
 		) {
 			Write-Color "Installing $pkgName version $pkgVersion..." -Foreground Blue
 			choco install $pkgName --version=$pkgVersion --source="." --yes --force
+			Write-Color "Installing $pkgName version $pkgVersion... (with system powershell)" -Foreground Blue
+			choco install $pkgName --version=$pkgVersion --source="." --yes --force --use-system-powershell
 		}
 	}
 
