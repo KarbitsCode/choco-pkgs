@@ -33,8 +33,9 @@ function Get-Installer {
 		[string]$PackageDir
 	)
 
-	$verificationFile = Join-Path $PackageDir "tools\VERIFICATION.txt"
-	if (-not (Test-Path $verificationFile)) {
+	# Try to find VERIFICATION.txt in common folders
+	$verificationFile = Get-ChildItem -Path $PackageDir -Recurse -Filter "VERIFICATION.txt" -File -ErrorAction SilentlyContinue | Where-Object { $_.Directory.Name -in @("tools","legal") } | Select-Object -First 1 -ExpandProperty FullName
+	if (-not $verificationFile -or -not (Test-Path $verificationFile)) {
 		Write-Warning "No VERIFICATION.txt found in $PackageDir, skipping download."
 		return
 	}
