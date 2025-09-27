@@ -79,12 +79,14 @@ function Get-Installer {
 	}
 }
 
+function Clean-TempFiles {
+	Get-ChildItem -Path "." -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" } | Remove-Item
+	Remove-Item *.nupkg
+}
+
 # =================================================================================================
 
 function Test-Validation-Package {
-	Remove-Item *.nupkg
-	Get-ChildItem -Path "." -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" } | Remove-Item
-
 	foreach ($pkgFolder in $folderArgs) {
 		Get-ChildItem -Path $pkgFolder -Recurse -Filter *.nuspec | ForEach-Object {
 			$dir = $_.DirectoryName
@@ -134,14 +136,13 @@ function Test-Install-Package {
 	} else {
 		Write-Warning "There is no change in list of packages, it's possible if all the previous package installs failed."
 	}
-
-	Get-ChildItem -Path $pkgFolder -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" } | Remove-Item
-	Remove-Item *.nupkg
 }
 
 function Main {
+	Clean-TempFiles
 	Test-Validation-Package
 	Test-Install-Package
+	Clean-TempFiles
 }
 
 if ((Split-Path -Path $MyInvocation.InvocationName -Leaf) -eq $MyInvocation.MyCommand.Name) {
