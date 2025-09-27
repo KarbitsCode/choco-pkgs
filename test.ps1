@@ -79,7 +79,7 @@ function Get-Installer {
 	}
 }
 
-function Clean-TempFiles {
+function Remove-TempFile {
 	Get-ChildItem -Path "." -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" } | Remove-Item
 	Remove-Item *.nupkg
 }
@@ -139,10 +139,10 @@ function Test-Install-Package {
 }
 
 function Main {
-	Clean-TempFiles
+	Remove-TempFile
 	Test-Validation-Package
 	Test-Install-Package
-	Clean-TempFiles
+	Remove-TempFile
 }
 
 if ((Split-Path -Path $MyInvocation.InvocationName -Leaf) -eq $MyInvocation.MyCommand.Name) {
