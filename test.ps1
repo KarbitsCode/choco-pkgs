@@ -28,6 +28,23 @@ function Write-Color {
 	}
 }
 
+function Remove-TempFile {
+	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
+	param ()
+
+	process {
+		$targets = @()
+		$targets += Get-ChildItem -Path "." -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" }
+		$targets += Get-ChildItem -Path "." -Filter *.nupkg
+
+		foreach ($t in $targets) {
+			if ($PSCmdlet.ShouldProcess($t.FullName, "Remove temp file")) {
+				Remove-Item $t.FullName -Force -ErrorAction SilentlyContinue -Verbose
+			}
+		}
+	}
+}
+
 function Get-Installer {
 	param (
 		[string]$PackageDir
@@ -77,11 +94,6 @@ function Get-Installer {
 	} else {
 		Write-Warning "No checksum info found, download only."
 	}
-}
-
-function Remove-TempFile {
-	Get-ChildItem -Path "." -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" } | Remove-Item
-	Remove-Item *.nupkg
 }
 
 # =================================================================================================
