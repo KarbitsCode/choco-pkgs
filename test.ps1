@@ -96,6 +96,24 @@ function Get-Installer {
 	}
 }
 
+function Get-Dependencies {
+	param([string]$nuspecPath)
+
+	try {
+		[xml]$xml = Get-Content $nuspecPath -Raw
+		$deps = @()
+
+		# Parse <dependencies><dependency id="..." version="..." />
+		$xml.package.metadata.dependencies.dependency | ForEach-Object {
+			if ($_.id) { $deps += $_.id }
+		}
+
+		return $deps
+	} catch {
+		return @()
+	}
+}
+
 # =================================================================================================
 
 function Test-Validation-Package {
@@ -111,11 +129,20 @@ function Test-Validation-Package {
 	}
 }
 
-# =================================================================================================
-
 function Test-Install-Package {
 	Write-Color "Getting list of packages before install test..." -Foreground Blue
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
+
+	# Get all nuspec dependency info
+	$allDependencies = @{}
+	foreach ($pkgFolder in $folderArgs) {
+		Get-ChildItem -Path $pkgFolder -Recurse -Filter *.nuspec | ForEach-Object {
+			$id = ([xml](Get-Content $_.FullName -Raw)).package.metadata.id
+			$deps = Get-Dependencies $_.FullName
+			$allDependencies[$id] = $deps
+		}
+	}
+	$depIds = $allDependencies.Values | ForEach-Object { $_ } | Select-Object -Unique
 
 	Get-ChildItem -Path "." -Filter *.nupkg | ForEach-Object {
 		$filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
@@ -126,10 +153,10 @@ function Test-Install-Package {
 			$pkgVersion = $matches['version']
 		}
 
-		# Skipping .install package only if $folderArgs is in default value (".")
+		# Skipping .install package only if $folderArgs is in default value (".") or it is in dependency from other package
 		if (
-			(($folderArgs.Count -eq 1 -and $folderArgs[0] -eq ".") -and $pkgName -notlike "*.install") -or
-			($folderArgs.Count -ne 1 -or $folderArgs[0] -ne ".")
+			((($folderArgs.Count -eq 1 -and $folderArgs[0] -eq ".") -and $pkgName -notlike "*.install") -or
+			($folderArgs.Count -ne 1 -or $folderArgs[0] -ne ".")) -and ($depIds -notcontains $pkgName)
 		) {
 			Write-Color "Installing $pkgName version $pkgVersion..." -Foreground Blue
 			choco install $pkgName --version=$pkgVersion --source="." --yes --force
