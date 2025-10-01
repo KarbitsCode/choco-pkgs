@@ -8,7 +8,6 @@
 # https://github.com/PowerShell/PSScriptAnalyzer
 
 name: PSScriptAnalyzer
-
 on:
   push:
     branches:
@@ -34,12 +33,13 @@ jobs:
       - name: Run PSScriptAnalyzer
         uses: microsoft/psscriptanalyzer-action@7a0da25f33985767f15f93140306528900744195
         with:
-          # Check https://github.com/microsoft/action-psscriptanalyzer for more info about the options.
+          # Check https://github.com/microsoft/psscriptanalyzer-action for more info about the options.
           # The below set up runs PSScriptAnalyzer to your entire repository and runs some basic security rules.
           path: .\
-          recurse: false
+          recurse: true
           # Include your own basic security rules. Removing this option will run all the rules
           #includeRule: '"PSAvoidGlobalAliases", "PSAvoidUsingConvertToSecureStringWithPlainText"'
+          excludeRule: "PSUseSingularNouns"
           output: results.sarif
 
       # Upload the SARIF file generated in the previous step
