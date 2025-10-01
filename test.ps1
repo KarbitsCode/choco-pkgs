@@ -28,7 +28,7 @@ function Write-Color {
 	}
 }
 
-function Remove-TempFile {
+function Remove-TempFiles {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 	param ()
 
@@ -178,10 +178,10 @@ function Test-Install-Package {
 }
 
 function Main {
-	Remove-TempFile
+	Remove-TempFiles
 	Test-Validation-Package
 	Test-Install-Package
-	Remove-TempFile
+	Remove-TempFiles
 }
 
 if ((Split-Path -Path $MyInvocation.InvocationName -Leaf) -eq $MyInvocation.MyCommand.Name) {
