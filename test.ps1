@@ -45,6 +45,26 @@ function Remove-TempFiles {
 	}
 }
 
+function Get-Dependencies {
+	param(
+		[string]$nuspecPath
+	)
+
+	try {
+		[xml]$xml = Get-Content $nuspecPath -Raw
+		$deps = @()
+
+		# Parse <dependencies><dependency id="..." version="..." />
+		$xml.package.metadata.dependencies.dependency | ForEach-Object {
+			if ($_.id) { $deps += $_.id }
+		}
+
+		return $deps
+	} catch {
+		return @()
+	}
+}
+
 function Get-Installer {
 	param (
 		[string]$PackageDir
@@ -68,7 +88,7 @@ function Get-Installer {
 
 	$checksumType = ($content | Select-String -Pattern '^  checksum_type: (.*)$').Matches.Groups[1].Value
 	$expectedChecksum = ($content | Select-String -Pattern '^  file_checksum: (.*)$').Matches.Groups[1].Value.ToUpper()
-	$actualChecksum = $(Get-RemoteChecksum $url $checksumType).ToUpper()
+	$actualChecksum = $(Get-RemoteChecksum -Url $url -Algorithm $checksumType).ToUpper()
 
 	$toolsDir = Join-Path $PackageDir "tools"
 	if (-not (Test-Path $toolsDir)) {
@@ -96,21 +116,66 @@ function Get-Installer {
 	}
 }
 
-function Get-Dependencies {
-	param([string]$nuspecPath)
+function Test-Package-Args {
+	param (
+		[string]$PackageDir
+	)
 
-	try {
-		[xml]$xml = Get-Content $nuspecPath -Raw
-		$deps = @()
+	$installFile = Join-Path $PackageDir "tools\chocolateyInstall.ps1"
+	if (-not (Test-Path $installFile)) {
+		Write-Warning "No chocolateyInstall.ps1 in $PackageDir, skipping checksum test."
+		return
+	}
 
-		# Parse <dependencies><dependency id="..." version="..." />
-		$xml.package.metadata.dependencies.dependency | ForEach-Object {
-			if ($_.id) { $deps += $_.id }
+	# Extract the $packageArgs block text
+	$script = Get-Content $installFile -Raw
+	$match = [regex]::Match($script, '\$packageArgs\s*=\s*@\{([^}]*)\}', 'Singleline')
+	if (-not $match.Success) {
+		Write-Warning "No packageArgs block found in $installFile, skipping checksum test."
+		return
+	}
+
+	# Parse lines into a hashtable (key = value)
+	$hashText = $match.Groups[1].Value
+	$pkgArgs = @{}
+	foreach ($line in ($hashText -split "`r?`n")) {
+		if ($line -match '^\s*([a-zA-Z0-9_]+)\s*=\s*(.+)$') {
+			$key = $matches[1]
+			$val = $matches[2].Trim().Trim("'").Trim('"')
+			$pkgArgs[$key] = $val
 		}
+	}
 
-		return $deps
-	} catch {
-		return @()
+	if ($pkgArgs.url -and $pkgArgs.checksum -and $pkgArgs.checksumType) {
+		Write-Host "Checking $($pkgArgs.url) in url" -ForegroundColor Blue
+		$actual = $(Get-RemoteChecksum -Url $pkgArgs.url -Algorithm $pkgArgs.checksumType).ToUpper()
+		$expected = $pkgArgs.checksum.ToUpper()
+
+		Write-Output "Expected checksum: $expected"
+		Write-Output "Actual checksum:   $actual"
+
+		if ($expected -eq $actual) {
+			Write-Host "Checksum verification passed for $($pkgArgs.url) in url" -ForegroundColor Green
+		} else {
+			Write-Warning "Checksum mismatch for url: $($pkgArgs.url)"
+		}
+	} else {
+		Write-Warning "No url in packageArgs, skipping checksum test."
+	}
+
+	if ($pkgArgs.url64bit -and $pkgArgs.checksum64 -and $pkgArgs.checksumType64) {
+		Write-Host "Checking $($pkgArgs.url64bit) in url64bit" -ForegroundColor Blue
+		$actual64 = $(Get-RemoteChecksum -Url $pkgArgs.url64bit -Algorithm $pkgArgs.checksumType64).ToUpper()
+		$expected64 = $pkgArgs.checksum64.ToUpper()
+
+		Write-Output "Expected checksum: $expected64"
+		Write-Output "Actual checksum:   $actual64"
+
+		if ($actual64 -eq $expected64) {
+			Write-Host "Checksum verification passed for $($pkgArgs.url64bit) in url64bit" -ForegroundColor Green
+		} else {
+			Write-Warning "Checksum mismatch for url64bit: $($pkgArgs.url64bit)"
+		}
 	}
 }
 
@@ -124,6 +189,7 @@ function Test-Validation-Package {
 
 			cnc $dir
 			Get-Installer $dir
+			Test-Package-Args $dir
 			choco pack $file
 		}
 	}
@@ -184,6 +250,6 @@ function Main {
 	Remove-TempFiles
 }
 
-if ((Split-Path -Path $MyInvocation.InvocationName -Leaf) -eq $MyInvocation.MyCommand.Name) {
+if ((Split-Path -Path $MyInvocation.InvocationName -Leaf) -eq ($MyInvocation.MyCommand.Name)) {
 	Main
 }
