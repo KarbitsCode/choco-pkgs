@@ -147,7 +147,7 @@ function Test-Package-Args {
 	}
 
 	if ($pkgArgs.url -and $pkgArgs.checksum -and $pkgArgs.checksumType) {
-		Write-Host "Checking $($pkgArgs.url) in url" -ForegroundColor Blue
+		Write-Color "Checking $($pkgArgs.url) in url" --Foreground Blue
 		$actual = $(Get-RemoteChecksum -Url $pkgArgs.url -Algorithm $pkgArgs.checksumType).ToUpper()
 		$expected = $pkgArgs.checksum.ToUpper()
 
@@ -155,7 +155,7 @@ function Test-Package-Args {
 		Write-Output "Actual checksum:   $actual"
 
 		if ($expected -eq $actual) {
-			Write-Host "Checksum verification passed for $($pkgArgs.url) in url" -ForegroundColor Green
+			Write-Color "Checksum verification passed for $($pkgArgs.url) in url" --Foreground Green
 		} else {
 			Write-Warning "Checksum mismatch for url: $($pkgArgs.url)"
 		}
@@ -164,7 +164,7 @@ function Test-Package-Args {
 	}
 
 	if ($pkgArgs.url64bit -and $pkgArgs.checksum64 -and $pkgArgs.checksumType64) {
-		Write-Host "Checking $($pkgArgs.url64bit) in url64bit" -ForegroundColor Blue
+		Write-Color "Checking $($pkgArgs.url64bit) in url64bit" --Foreground Blue
 		$actual64 = $(Get-RemoteChecksum -Url $pkgArgs.url64bit -Algorithm $pkgArgs.checksumType64).ToUpper()
 		$expected64 = $pkgArgs.checksum64.ToUpper()
 
@@ -172,7 +172,7 @@ function Test-Package-Args {
 		Write-Output "Actual checksum:   $actual64"
 
 		if ($actual64 -eq $expected64) {
-			Write-Host "Checksum verification passed for $($pkgArgs.url64bit) in url64bit" -ForegroundColor Green
+			Write-Color "Checksum verification passed for $($pkgArgs.url64bit) in url64bit" --Foreground Green
 		} else {
 			Write-Warning "Checksum mismatch for url64bit: $($pkgArgs.url64bit)"
 		}
