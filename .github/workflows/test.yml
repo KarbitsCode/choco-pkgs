@@ -33,8 +33,31 @@ jobs:
         with:
           args: upgrade choco-nuspec-checker chocolatey-au curl 7zip -y
 
+      - name: Detect changed folder
+        id: detect
+        shell: pwsh
+        run: |
+          git fetch origin ${{ github.event.before }} --depth=1
+          $changed = git diff --name-only ${{ github.event.before }} ${{ github.sha }}
+          $packageChanged =  $changed | Where-Object { ($_ -notlike ".github/*") -and ($_ -notlike ".icon/*") }
+          $itselfChanged = $changed | Where-Object { $_ -like "*test.yml" }
+
+          if (-not $packageChanged) {
+            Write-Host "No package changes detected"
+            $folder = ""
+          } else {
+            $folder = $packageChanged  | ForEach-Object {
+              $parts = $_ -split "/"
+              if ($parts.Length -ge 2) {
+                "$($parts[0])/$($parts[1])"
+              }
+            } | Sort-Object -Unique
+            Write-Host "Folder changed under the packages: $folder"
+          }
+      
+          echo "folder=$folder" >> $env:GITHUB_OUTPUT
+
       - name: Run powershell script
         shell: pwsh
         run: |
-          .\test.ps1
-
+          .\test.ps1 ${{ steps.detect.outputs.folder }}
