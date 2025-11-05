@@ -34,7 +34,7 @@ function Remove-TempFiles {
 
 	process {
 		$targets = @()
-		$targets += Get-ChildItem -Path "." -Recurse | Where-Object { $_.Extension -in ".zip", ".exe" }
+		$targets += Get-ChildItem -Path "." -Recurse | Where-Object { $_.Extension -in ".zip", ".exe", ".msi" }
 		$targets += Get-ChildItem -Path "." -Filter *.nupkg
 
 		foreach ($t in $targets) {
@@ -224,10 +224,24 @@ function Test-Install-Package {
 			((($folderArgs.Count -eq 1 -and $folderArgs[0] -eq ".") -and $pkgName -notlike "*.install") -or
 			($folderArgs.Count -ne 1 -or $folderArgs[0] -ne ".")) -and ($depIds -notcontains $pkgName)
 		) {
+			Write-Color "Getting list of packages before install test..." -Foreground Blue
+			$installedBefore2 = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
+
 			Write-Color "Installing $pkgName version $pkgVersion..." -Foreground Blue
 			choco install $pkgName --version=$pkgVersion --source="." --yes --force
 			Write-Color "Installing $pkgName version $pkgVersion... (with system powershell)" -Foreground Blue
 			choco install $pkgName --version=$pkgVersion --source="." --yes --force --use-system-powershell
+
+			Write-Color "Getting list of packages after install test..." -Foreground Blue
+			$installedAfter2 = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
+			$newlyInstalled2 = @($installedAfter2 | Where-Object { $_ -notin $installedBefore2 })
+
+			if ($newlyInstalled2.Length -ne 0) {
+				Write-Color "Uninstalling newly installed packages: $($newlyInstalled2 -join ', ')" -Foreground Blue
+				choco uninstall @newlyInstalled2 -yes
+			} else {
+				Write-Warning "There is no change in list of packages, it's possible if this package failed to install."
+			}
 		}
 	}
 
@@ -239,7 +253,7 @@ function Test-Install-Package {
 		Write-Color "Uninstalling newly installed packages: $($newlyInstalled -join ', ')" -Foreground Blue
 		choco uninstall @newlyInstalled -yes
 	} else {
-		Write-Warning "There is no change in list of packages, it's possible if all the previous package installs failed."
+		Write-Warning "There is no change in list of packages, it's probably all good."
 	}
 }
 
