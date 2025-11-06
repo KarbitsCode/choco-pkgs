@@ -40,7 +40,7 @@ This is a nuspec. It mostly adheres to https://docs.nuget.org/create/Nuspec-Refe
     <projectUrl>https://crystalmark.info/en/software/crystalmarkretro/</projectUrl>
     <!-- There are a number of CDN Services that can be used for hosting the Icon for a package. More information can be found here: https://docs.chocolatey.org/en-us/create/create-packages#package-icon-guidelines -->
     <!-- Here is an example using Githack -->
-    <iconUrl>https://a.fsdn.com/allura/p/crystalmarkretro/icon?w=256</iconUrl>
+    <iconUrl>https://cdn.statically.io/gh/KarbitsCode/choco-pkgs/main/.icon/crystalmarkretro.png</iconUrl>
     <copyright>Copyright (C) Crystal Dew World.</copyright>
     <!-- If there is a license Url available, it is required for the community feed -->
     <licenseUrl>https://crystalmark.info/en/software/crystalmarkretro/crystalmarkretro-license/</licenseUrl>
