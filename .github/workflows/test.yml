@@ -5,6 +5,12 @@ on:
       - main
     paths-ignore:
       - README.md
+      - .gitignore
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
   workflow_dispatch:
 
 concurrency:
