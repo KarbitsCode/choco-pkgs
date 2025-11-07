@@ -46,7 +46,7 @@ This is a nuspec. It mostly adheres to https://docs.nuget.org/create/Nuspec-Refe
     <licenseUrl>https://www.exemsi.com/eula/</licenseUrl>
     <!--<requireLicenseAcceptance>true</requireLicenseAcceptance>-->
     <!--<projectSourceUrl>Software Source Location - is the software FOSS somewhere? Link to it with this</projectSourceUrl>-->
-    <!--<docsUrl>At what url are the software docs located?</docsUrl>-->
+    <docsUrl>https://www.exemsi.com/documentation/</docsUrl>
     <!--<mailingListUrl></mailingListUrl>-->
     <!--<bugTrackerUrl></bugTrackerUrl>-->
     <tags>msiwrapper.install exe msi wrapper installer setup package deployment</tags>
