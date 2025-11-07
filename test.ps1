@@ -182,7 +182,11 @@ function Test-Package-Args {
 # =================================================================================================
 
 function Test-Validation-Package {
-	foreach ($pkgFolder in $folderArgs) {
+	param (
+		[string]$funcArgs
+	)
+
+	foreach ($pkgFolder in $funcArgs) {
 		Get-ChildItem -Path $pkgFolder -Recurse -Filter *.nuspec | ForEach-Object {
 			$dir = $_.DirectoryName
 			$file = $_.FullName
@@ -196,12 +200,16 @@ function Test-Validation-Package {
 }
 
 function Test-Install-Package {
+	param (
+		[string]$funcArgs
+	)
+
 	Write-Color "Getting list of packages before install test..." -Foreground Blue
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
 	# Get all nuspec dependency info
 	$allDependencies = @{}
-	foreach ($pkgFolder in $folderArgs) {
+	foreach ($pkgFolder in $funcArgs) {
 		Get-ChildItem -Path $pkgFolder -Recurse -Filter *.nuspec | ForEach-Object {
 			$id = ([xml](Get-Content $_.FullName -Raw)).package.metadata.id
 			$deps = Get-Dependencies $_.FullName
@@ -219,10 +227,10 @@ function Test-Install-Package {
 			$pkgVersion = $matches['version']
 		}
 
-		# Skipping .install package only if $folderArgs is in default value (".") or it is in dependency from other package
+		# Skipping .install package only if $funcArgs is in default value (".") or it is in dependency from other package
 		if (
-			((($folderArgs.Count -eq 1 -and $folderArgs[0] -eq ".") -and $pkgName -notlike "*.install") -or
-			($folderArgs.Count -ne 1 -or $folderArgs[0] -ne ".")) -and ($depIds -notcontains $pkgName)
+			((($funcArgs.Count -eq 1 -and $funcArgs[0] -eq ".") -and $pkgName -notlike "*.install") -or
+			($funcArgs.Count -ne 1 -or $funcArgs[0] -ne ".")) -and ($depIds -notcontains $pkgName)
 		) {
 			Write-Color "Getting list of packages before install test..." -Foreground Blue
 			$installedBefore2 = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
@@ -259,8 +267,8 @@ function Test-Install-Package {
 
 function Main {
 	Remove-TempFiles
-	Test-Validation-Package
-	Test-Install-Package
+	Test-Validation-Package $folderArgs
+	Test-Install-Package $folderArgs
 	Remove-TempFiles
 }
 
