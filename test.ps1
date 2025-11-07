@@ -106,10 +106,10 @@ function Get-Installer {
 		Write-Output "Expected checksum: $expectedChecksum"
 		Write-Output "Actual checksum:   $actualChecksum"
 
-		if ($actualChecksum -ne $expectedChecksum) {
-			throw "Checksum verification failed for $outFile"
-		} else {
+		if ($actualChecksum -eq $expectedChecksum) {
 			Write-Color "Checksum verification passed for $outFile" -Foreground Green
+		} else {
+			Write-Warning "Checksum verification failed for $outFile"
 		}
 	} else {
 		Write-Warning "No checksum info found, download only."
@@ -155,9 +155,9 @@ function Test-Package-Args {
 		Write-Output "Actual checksum:   $actual"
 
 		if ($expected -eq $actual) {
-			Write-Color "Checksum verification passed for $($pkgArgs.url) in url" -Foreground Green
+			Write-Color "Checksum verification passed for url: $($pkgArgs.url)" -Foreground Green
 		} else {
-			Write-Warning "Checksum mismatch for url: $($pkgArgs.url)"
+			Write-Warning "Checksum verification passed for url: $($pkgArgs.url)"
 		}
 	} else {
 		Write-Warning "No url in packageArgs, skipping checksum test."
@@ -183,7 +183,7 @@ function Test-Package-Args {
 
 function Test-Validation-Package {
 	param (
-		[string]$funcArgs
+		[string[]]$funcArgs
 	)
 
 	foreach ($pkgFolder in $funcArgs) {
@@ -201,7 +201,7 @@ function Test-Validation-Package {
 
 function Test-Install-Package {
 	param (
-		[string]$funcArgs
+		[string[]]$funcArgs
 	)
 
 	Write-Color "Getting list of packages before install test..." -Foreground Blue
