@@ -47,22 +47,30 @@ function Remove-TempFiles {
 
 function Get-Dependencies {
 	param(
-		[string]$nuspecPath
+		[string[]]$PackageDir
 	)
 
-	try {
-		[xml]$xml = Get-Content $nuspecPath -Raw
-		$deps = @()
+	$allDeps = @{}
 
-		# Parse <dependencies><dependency id="..." version="..." />
-		$xml.package.metadata.dependencies.dependency | ForEach-Object {
-			if ($_.id) { $deps += $_.id }
+	# Process all nuspec files recursively
+	foreach ($nuspecFile in Get-ChildItem -Path $PackageDir -Recurse -Filter *.nuspec) {
+		try {
+			[xml]$xml = Get-Content $nuspecFile.FullName -Raw
+			$id = $xml.package.metadata.id
+			$deps = @()
+
+			# Handle both single <dependency> or multiple <dependency> nodes
+			$xml.package.metadata.dependencies.dependency | ForEach-Object {
+				if ($_.id) { $deps += $_.id }
+			}
+
+			$allDeps[$id] = $deps
+		} catch {
+			Write-Warning "Failed to read $($nuspecFile.FullName)"
 		}
-
-		return $deps
-	} catch {
-		return @()
 	}
+
+	return $allDeps.Values | ForEach-Object { $_ } | Select-Object -Unique
 }
 
 function Get-Installer {
@@ -208,15 +216,7 @@ function Test-Install-Package {
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
 	# Get all nuspec dependency info
-	$allDependencies = @{}
-	foreach ($pkgFolder in $funcArgs) {
-		Get-ChildItem -Path $pkgFolder -Recurse -Filter *.nuspec | ForEach-Object {
-			$id = ([xml](Get-Content $_.FullName -Raw)).package.metadata.id
-			$deps = Get-Dependencies $_.FullName
-			$allDependencies[$id] = $deps
-		}
-	}
-	$depIds = $allDependencies.Values | ForEach-Object { $_ } | Select-Object -Unique
+	$depIds = Get-Dependencies $funcArgs
 
 	Get-ChildItem -Path "." -Filter *.nupkg | ForEach-Object {
 		$filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
