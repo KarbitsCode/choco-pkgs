@@ -114,7 +114,7 @@ function Get-Installer {
 
 	$checksumType = ($content | Select-String -Pattern '^  checksum_type: (.*)$').Matches.Groups[1].Value
 	$expectedChecksum = ($content | Select-String -Pattern '^  file_checksum: (.*)$').Matches.Groups[1].Value.ToUpper()
-	# $actualChecksum = $(Get-RemoteChecksum -Url $url -Algorithm $checksumType).ToUpper()
+	$actualChecksum = $(Get-RemoteChecksum -Url $url -Algorithm $checksumType).ToUpper()
 
 	$toolsDir = Join-Path $PackageDir "tools"
 	if (-not (Test-Path $toolsDir)) {
@@ -233,8 +233,23 @@ function Test-Install-Package {
 	Write-Color "Getting list of packages before install test..." -Foreground Blue
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
-	# Get all nuspec dependency info
+	# Gather all nuspec dependency info
 	$deps = Get-Dependencies $funcArgs
+	$dirs = $dirs = Get-ChildItem -Directory | Select-Object -ExpandProperty Name
+
+	foreach ($dep in $deps) {
+		$id = $dep.Id
+		$ver = $dep.Version.Trim("[", "]")
+
+		# Automatically handles package dependencies here
+		if ($id -notin $dirs) {
+			Write-Color "Installing dependency package: $($id) version $($ver)" -Foreground Blue
+			choco install $id -y --version $ver
+		} else {
+			Write-Color "Preparing dependency package: $($id) version $($ver)" -Foreground Blue
+			Test-Validation-Package "$($id)\$($ver)"
+		}
+	}
 
 	Get-ChildItem -Path "." -Filter *.nupkg | ForEach-Object {
 		$filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
