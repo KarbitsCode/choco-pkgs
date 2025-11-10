@@ -50,27 +50,28 @@ function Get-Dependencies {
 		[string[]]$PackageDir
 	)
 
-	$allDeps = @{}
+	$allDeps = @()
 
 	# Process all nuspec files recursively
 	foreach ($nuspecFile in Get-ChildItem -Path $PackageDir -Recurse -Filter *.nuspec) {
 		try {
 			[xml]$xml = Get-Content $nuspecFile.FullName -Raw
-			$id = $xml.package.metadata.id
-			$deps = @()
 
-			# Handle both single <dependency> or multiple <dependency> nodes
+			# Get id and version from <dependency> nodes
 			$xml.package.metadata.dependencies.dependency | ForEach-Object {
-				if ($_.id) { $deps += $_.id }
+				if ($_.id) {
+					$allDeps += [PSCustomObject]@{
+						Id	  = $_.id
+						Version = $_.version
+					}
+				}
 			}
-
-			$allDeps[$id] = $deps
 		} catch {
 			Write-Warning "Failed to read $($nuspecFile.FullName)"
 		}
 	}
 
-	return $allDeps.Values | ForEach-Object { $_ } | Select-Object -Unique
+	$allDeps | Sort-Object Id, Version -Unique
 }
 
 function Get-Installer {
@@ -216,7 +217,7 @@ function Test-Install-Package {
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
 	# Get all nuspec dependency info
-	$depIds = Get-Dependencies $funcArgs
+	$deps = Get-Dependencies $funcArgs
 
 	Get-ChildItem -Path "." -Filter *.nupkg | ForEach-Object {
 		$filename = [System.IO.Path]::GetFileNameWithoutExtension($_.FullName)
@@ -230,7 +231,7 @@ function Test-Install-Package {
 		# Skipping .install package only if $funcArgs is in default value (".") or it is in dependency from other package
 		if (
 			((($funcArgs.Count -eq 1 -and $funcArgs[0] -eq ".") -and $pkgName -notlike "*.install") -or
-			($funcArgs.Count -ne 1 -or $funcArgs[0] -ne ".")) -and ($depIds -notcontains $pkgName)
+			($funcArgs.Count -ne 1 -or $funcArgs[0] -ne ".")) -and ($deps.Id -notcontains $pkgName)
 		) {
 			Write-Color "Getting list of packages before install test..." -Foreground Blue
 			$installedBefore2 = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
