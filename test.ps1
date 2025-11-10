@@ -97,7 +97,7 @@ function Get-Installer {
 
 	$checksumType = ($content | Select-String -Pattern '^  checksum_type: (.*)$').Matches.Groups[1].Value
 	$expectedChecksum = ($content | Select-String -Pattern '^  file_checksum: (.*)$').Matches.Groups[1].Value.ToUpper()
-	$actualChecksum = $(Get-RemoteChecksum -Url $url -Algorithm $checksumType).ToUpper()
+	# $actualChecksum = $(Get-RemoteChecksum -Url $url -Algorithm $checksumType).ToUpper()
 
 	$toolsDir = Join-Path $PackageDir "tools"
 	if (-not (Test-Path $toolsDir)) {
