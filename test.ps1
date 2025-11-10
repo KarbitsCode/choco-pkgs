@@ -3,10 +3,6 @@ param (
 	[string[]]$folderArgs = "."
 )
 
-$headers = @{
-	"User-Agent" = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0"
-}
-
 function Write-Color {
 	[CmdletBinding()]
 	param (
@@ -47,6 +43,23 @@ function Remove-TempFiles {
 			}
 		}
 	}
+}
+
+function Get-RemoteChecksum {
+	param(
+		[string] $Url,
+		$Algorithm='sha256'
+	)
+
+	$fn = [System.IO.Path]::GetTempFileName()
+	if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+		& curl.exe -L $Url -o $fn
+	} else {
+		Invoke-WebRequest $Url -OutFile $fn -UseBasicParsing
+	}
+	$res = Get-FileHash $fn -Algorithm $Algorithm | ForEach-Object Hash
+	Remove-Item $fn -Force -ErrorAction Ignore
+	return $res.ToLower()
 }
 
 function Get-Dependencies {
@@ -101,7 +114,7 @@ function Get-Installer {
 
 	$checksumType = ($content | Select-String -Pattern '^  checksum_type: (.*)$').Matches.Groups[1].Value
 	$expectedChecksum = ($content | Select-String -Pattern '^  file_checksum: (.*)$').Matches.Groups[1].Value.ToUpper()
-	$actualChecksum = $(Get-RemoteChecksum -Url $url -Algorithm $checksumType -Headers $headers).ToUpper()
+	# $actualChecksum = $(Get-RemoteChecksum -Url $url -Algorithm $checksumType).ToUpper()
 
 	$toolsDir = Join-Path $PackageDir "tools"
 	if (-not (Test-Path $toolsDir)) {
@@ -161,7 +174,7 @@ function Test-Package-Args {
 
 	if ($pkgArgs.url -and $pkgArgs.checksum -and $pkgArgs.checksumType) {
 		Write-Color "Checking $($pkgArgs.url) in url" -Foreground Blue
-		$actual = $(Get-RemoteChecksum -Url $pkgArgs.url -Algorithm $pkgArgs.checksumType -Headers $headers).ToUpper()
+		$actual = $(Get-RemoteChecksum -Url $pkgArgs.url -Algorithm $pkgArgs.checksumType).ToUpper()
 		$expected = $pkgArgs.checksum.ToUpper()
 
 		Write-Output "Expected checksum: $expected"
@@ -178,7 +191,7 @@ function Test-Package-Args {
 
 	if ($pkgArgs.url64bit -and $pkgArgs.checksum64 -and $pkgArgs.checksumType64) {
 		Write-Color "Checking $($pkgArgs.url64bit) in url64bit" -Foreground Blue
-		$actual64 = $(Get-RemoteChecksum -Url $pkgArgs.url64bit -Algorithm $pkgArgs.checksumType64 -Headers $headers).ToUpper()
+		$actual64 = $(Get-RemoteChecksum -Url $pkgArgs.url64bit -Algorithm $pkgArgs.checksumType64).ToUpper()
 		$expected64 = $pkgArgs.checksum64.ToUpper()
 
 		Write-Output "Expected checksum: $expected64"
