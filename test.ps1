@@ -242,12 +242,14 @@ function Test-Install-Package {
 		$ver = $dep.Version.Trim("[", "]")
 
 		# Automatically handles package dependencies here
+		Write-Color "Preparing dependency package: $($id) version $($ver)" -Foreground Blue
 		if ($id -notin $dirs) {
-			Write-Color "Installing dependency package: $($id) version $($ver)" -Foreground Blue
 			choco install $id --version $ver --yes --force
 		} else {
-			Write-Color "Preparing dependency package: $($id) version $($ver)" -Foreground Blue
-			Test-Validation-Package "$($id)\$($ver)"
+			# Make sure to not package it twice
+			if (-not (Test-Path "$($id).$($ver).nupkg")) {
+				Test-Validation-Package "$($id)\$($ver)"
+			}
 		}
 	}
 
