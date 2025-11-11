@@ -114,7 +114,7 @@ function Get-Installer {
 
 	$checksumType = ($content | Select-String -Pattern '^  checksum_type: (.*)$').Matches.Groups[1].Value
 	$expectedChecksum = ($content | Select-String -Pattern '^  file_checksum: (.*)$').Matches.Groups[1].Value.ToUpper()
-	$actualChecksum = $(Get-RemoteChecksum -Url $url -Algorithm $checksumType).ToUpper()
+	# $actualChecksum = $(Get-RemoteChecksum -Url $url -Algorithm $checksumType).ToUpper()
 
 	$toolsDir = Join-Path $PackageDir "tools"
 	if (-not (Test-Path $toolsDir)) {
@@ -183,7 +183,7 @@ function Test-Package-Args {
 		if ($expected -eq $actual) {
 			Write-Color "Checksum verification passed for url: $($pkgArgs.url)" -Foreground Green
 		} else {
-			Write-Warning "Checksum verification passed for url: $($pkgArgs.url)"
+			Write-Warning "Checksum verification failed for url: $($pkgArgs.url)"
 		}
 	} else {
 		Write-Warning "No url in packageArgs, skipping checksum test."
@@ -244,7 +244,7 @@ function Test-Install-Package {
 		# Automatically handles package dependencies here
 		if ($id -notin $dirs) {
 			Write-Color "Installing dependency package: $($id) version $($ver)" -Foreground Blue
-			choco install $id -y --version $ver
+			choco install $id --version $ver --yes --force
 		} else {
 			Write-Color "Preparing dependency package: $($id) version $($ver)" -Foreground Blue
 			Test-Validation-Package "$($id)\$($ver)"
@@ -279,7 +279,7 @@ function Test-Install-Package {
 
 			if ($newlyInstalled2.Length -ne 0) {
 				Write-Color "Uninstalling newly installed packages: $($newlyInstalled2 -join ', ')" -Foreground Blue
-				choco uninstall @newlyInstalled2 -yes
+				choco uninstall @newlyInstalled2 --yes
 			} else {
 				Write-Warning "There is no change in list of packages, it's possible if this package failed to install."
 			}
@@ -292,7 +292,7 @@ function Test-Install-Package {
 
 	if ($newlyInstalled.Length -ne 0) {
 		Write-Color "Uninstalling newly installed packages: $($newlyInstalled -join ', ')" -Foreground Blue
-		choco uninstall @newlyInstalled -yes
+		choco uninstall @newlyInstalled --yes
 	} else {
 		Write-Warning "There is no change in list of packages, it's probably all good."
 	}
