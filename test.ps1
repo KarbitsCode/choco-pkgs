@@ -1,6 +1,7 @@
 param (
 	[Parameter(ValueFromRemainingArguments = $true)]
-	[string[]]$folderArgs = "."
+	[string[]]$folderArgs = ".",
+	[switch]$PackageOnly
 )
 
 function Write-Color {
@@ -35,7 +36,9 @@ function Remove-TempFiles {
 	process {
 		$targets = @()
 		$targets += Get-ChildItem -Path "." -Recurse | Where-Object { $_.Extension -in ".zip", ".exe", ".msi" }
-		$targets += Get-ChildItem -Path "." -Filter *.nupkg
+		if (-not $PackageOnly) {
+			$targets += Get-ChildItem -Path "." -Filter *.nupkg
+		}
 
 		foreach ($t in $targets) {
 			if ($PSCmdlet.ShouldProcess($t.FullName, "Remove temp file")) {
@@ -229,6 +232,10 @@ function Test-Install-Package {
 	param (
 		[string[]]$funcArgs
 	)
+
+	if ($PackageOnly) {
+		return
+	}
 
 	Write-Color "Getting list of packages before install test..." -Foreground Blue
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
