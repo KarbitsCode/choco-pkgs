@@ -20,26 +20,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  test:
+  detect:
     runs-on: windows-latest
-    timeout-minutes: 120
+    timeout-minutes: 30
     permissions:
       contents: read
+    outputs:
+      folder: ${{ steps.detect.outputs.folder }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5.0.0
-
-      - name: Enable Windows Update
-        shell: pwsh
-        run: |
-          # PowerShell package (as choco-nuspec-checker dependency) need this, see https://github.com/KarbitsCode/choco-pkgs/actions/runs/17194511952/job/48774605367#step:3:28
-          Set-Service -Name 'wuauserv' -StartupType Manual -Verbose
-          Start-Service -Name 'wuauserv' -Verbose -PassThru
-
-      - name: Set up chocolatey packages
-        uses: crazy-max/ghaction-chocolatey@v3.4.0
-        with:
-          args: upgrade choco-nuspec-checker chocolatey-au curl -y
 
       - name: Detect changed folder
         id: detect
@@ -65,7 +55,29 @@ jobs:
       
           echo "folder=$folder" >> $env:GITHUB_OUTPUT
 
-      - name: Run powershell script
+  test:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    needs: detect
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5.0.0
+
+      - name: Enable Windows Update
         shell: pwsh
         run: |
-          .\test.ps1 ${{ steps.detect.outputs.folder }}
+          # PowerShell package (as choco-nuspec-checker dependency) need this, see https://github.com/KarbitsCode/choco-pkgs/actions/runs/17194511952/job/48774605367#step:3:28
+          Set-Service -Name 'wuauserv' -StartupType Manual -Verbose
+          Start-Service -Name 'wuauserv' -Verbose -PassThru
+
+      - name: Set up chocolatey packages
+        uses: crazy-max/ghaction-chocolatey@v3.4.0
+        with:
+          args: upgrade choco-nuspec-checker chocolatey-au curl -y
+
+      - name: Run powershell scripts
+        shell: pwsh
+        run: |
+          .\test.ps1 ${{ needs.detect.outputs.folder }}
