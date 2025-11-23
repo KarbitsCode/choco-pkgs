@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Read this before creating packages: https://docs.chocolatey.org/en-us/create/create-packages -->
 <!-- It is especially important to read the above link to understand additional requirements when publishing packages to the community feed aka dot org (https://community.chocolatey.org/packages). -->
-
 <!-- Test your packages in a test environment: https://github.com/chocolatey/chocolatey-test-environment -->
-
 <!--
 This is a nuspec. It mostly adheres to https://docs.nuget.org/create/Nuspec-Reference. Chocolatey uses a special version of NuGet.Core that allows us to do more than was initially possible. As such there are certain things to be aware of:
 
@@ -11,7 +9,6 @@ This is a nuspec. It mostly adheres to https://docs.nuget.org/create/Nuspec-Refe
 * Any of the following elements can ONLY be used by choco tools - projectSourceUrl, docsUrl, mailingListUrl, bugTrackerUrl, packageSourceUrl, provides, conflicts, replaces
 * nuget.exe can still install packages with those elements but they are ignored. Any authoring tools or commands will error on those elements
 -->
-
 <!-- You can embed software files directly into packages, as long as you are not bound by distribution rights. -->
 <!-- * If you are an organization making private packages, you probably have no issues here -->
 <!-- * If you are releasing to the community feed, you need to consider distribution rights. -->
@@ -31,7 +28,6 @@ This is a nuspec. It mostly adheres to https://docs.nuget.org/create/Nuspec-Refe
     <!-- owners is a poor name for maintainers of the package. It sticks around by this name for compatibility reasons. It basically means you. -->
     <owners>KarbitsCode</owners>
     <!-- ============================== -->
-
     <!-- == SOFTWARE SPECIFIC SECTION == -->
     <!-- This section is about the software itself -->
     <title>CrystalMark Retro</title>
@@ -55,7 +51,6 @@ This is a nuspec. It mostly adheres to https://docs.nuget.org/create/Nuspec-Refe
 This software supports 32-bit (x86), 64-bit (x64/ARM64), many-core, and multilingual (48+ languages) systems, and can measure CPU, Disk, 2D graphics (GDI), and 3D graphics (OpenGL) performance with a single click. Benchmark results can be registered in CrystalMarkDB for centralized management of past results (account required: free of charge) and comparison with data registered by users around the world.</description>
     <releaseNotes>https://crystalmark.info/en/software/crystalmarkretro/crystalmarkretro-history/</releaseNotes>
     <!-- =============================== -->
-
     <!-- Specifying dependencies and version ranges? https://docs.nuget.org/create/versioning#specifying-version-ranges-in-.nuspec-files -->
     <dependencies>
       <!-- <dependency id="" version="__MINIMUM_VERSION__" /> -->
@@ -66,7 +61,6 @@ This software supports 32-bit (x86), 64-bit (x64/ARM64), many-core, and multilin
       <!-- <dependency id="chocolatey-core.extension" version="1.1.0" /> -->
     </dependencies>
     <!-- chocolatey-core.extension - https://community.chocolatey.org/packages/chocolatey-core.extension -->
-
     <!--<provides>NOT YET IMPLEMENTED</provides>-->
     <!--<conflicts>NOT YET IMPLEMENTED</conflicts>-->
     <!--<replaces>NOT YET IMPLEMENTED</replaces>-->
