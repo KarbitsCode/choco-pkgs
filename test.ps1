@@ -91,7 +91,7 @@ function Get-Dependencies {
 		}
 	}
 
-	$allDeps | Sort-Object Id, Version -Unique
+	return $allDeps | Sort-Object Id, Version -Unique
 }
 
 function Get-Installer {
@@ -242,16 +242,19 @@ function Test-Install-Package {
 
 	# Gather all nuspec dependency info
 	$deps = Get-Dependencies $funcArgs
-	$dirs = $dirs = Get-ChildItem -Directory | Select-Object -ExpandProperty Name
+	$dirs = Get-ChildItem -Directory | Select-Object -ExpandProperty Name
 
 	foreach ($dep in $deps) {
 		$id = $dep.Id
 		$ver = $dep.Version.Trim("[", "]")
 
-		# Automatically handles package dependencies here
+		# Automatically handle package dependencies here
 		Write-Color "Preparing dependency package: $($id) version $($ver)" -Foreground Blue
 		if ($id -notin $dirs) {
-			choco install $id --version $ver --yes --force
+			# Make sure to not install it twice
+			if ($id -notin $installedBefore) {
+				choco install $id --version $ver --yes --force
+			}
 		} else {
 			# Make sure to not package it twice
 			if (-not (Test-Path "$($id).$($ver).nupkg")) {
