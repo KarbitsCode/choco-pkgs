@@ -94,14 +94,19 @@ jobs:
         if: always()
         shell: pwsh
         run: |
-          $name = "${{ needs.detect.outputs.folder }}".Replace("/", "-")
+          $folder = "${{ needs.detect.outputs.folder }}"
+          if ($folder) {
+            $name = "-${{ needs.detect.outputs.folder }}".Replace("/", "-")
+          } else {
+            $name = ""
+          }
           echo "artifact_name=$name" >> $env:GITHUB_OUTPUT
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5.0.0
         if: always()
         with:
-          name: screenshots-${{ steps.artifact.outputs.artifact_name }}
+          name: screenshots${{ steps.artifact.outputs.artifact_name }}
           if-no-files-found: ignore
           compression-level: 9
           path: |
