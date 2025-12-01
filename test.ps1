@@ -1,7 +1,8 @@
 param (
 	[Parameter(ValueFromRemainingArguments = $true)]
 	[string[]]$folderArgs = ".",
-	[switch]$PackageOnly
+	[switch]$PackageOnly,
+	[switch]$NoScreenshots
 )
 
 function Write-Color {
@@ -29,6 +30,77 @@ function Write-Color {
 	}
 }
 
+$Global:ScreenshotJob = $null
+$Global:ScreenshotFolder = ".\.ss\"
+
+function Start-ScreenshotLoop {
+	[CmdletBinding()]
+	param(
+		[string]$Folder = ".\ss",
+		[int]$Interval = 10
+	)
+
+	if ($Global:ScreenshotJob -and ($Global:ScreenshotJob.State -eq "Running")) {
+		Write-Warning "Screenshot loop already running."
+		return
+	}
+
+	# Ensure folder exists
+	New-Item -ItemType Directory -Force -Path $Folder | Out-Null
+
+	$Global:ScreenshotJob = Start-Job -ScriptBlock {
+		param($Folder, $Interval)
+
+		Add-Type -AssemblyName System.Windows.Forms
+		Add-Type -AssemblyName System.Drawing
+		Add-Type -TypeDefinition @"
+	public static class DPI {
+		[System.Runtime.InteropServices.DllImport("user32.dll")]
+		public static extern bool SetProcessDPIAware();
+	}
+"@
+		[DPI]::SetProcessDPIAware()
+
+		# Screenshot in a loop
+		while ($true) {
+			$timestamp = (Get-Date).ToString("yyyyMMdd_HHmmss")
+			$path = Join-Path $Folder "screenshot_$timestamp.png"
+
+			$screen = [System.Windows.Forms.Screen]::PrimaryScreen
+			$bounds = $screen.Bounds
+
+			$bmp = New-Object System.Drawing.Bitmap($bounds.Width, $bounds.Height)
+			$gfx = [System.Drawing.Graphics]::FromImage($bmp)
+			$gfx.CopyFromScreen($bounds.X, $bounds.Y, 0, 0, $bmp.Size)
+			$bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+			$gfx.Dispose()
+			$bmp.Dispose()
+
+			Start-Sleep -Seconds $Interval
+		}
+	} -ArgumentList $Folder, $Interval
+
+	Write-Verbose "Screenshot loop started."
+}
+
+function Stop-ScreenshotLoop {
+	[CmdletBinding()]
+	param()
+	if (-not $Global:ScreenshotJob) {
+		Write-Warning "No screenshot loop has been started."
+		return
+	}
+
+	if ($Global:ScreenshotJob.State -eq "Running") {
+		Stop-Job $Global:ScreenshotJob | Out-Null
+		Remove-Job $Global:ScreenshotJob | Out-Null
+		$Global:ScreenshotJob = $null
+		Write-Verbose "Screenshot loop stopped."
+	} else {
+		Write-Warning "Screenshot loop is not running."
+	}
+}
+
 function Remove-TempFiles {
 	[CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'Medium')]
 	param ()
@@ -38,6 +110,10 @@ function Remove-TempFiles {
 		$targets += Get-ChildItem -Path "." -Recurse | Where-Object { $_.Extension -in ".zip", ".exe", ".msi" }
 		if (-not $PackageOnly) {
 			$targets += Get-ChildItem -Path "." -Filter *.nupkg
+		}
+		if ($NoScreenshots) {
+			$targets += Get-ChildItem -Path $Global:ScreenshotFolder -ErrorAction SilentlyContinue
+			$targets += Get-Item -Path $Global:ScreenshotFolder -ErrorAction SilentlyContinue
 		}
 
 		foreach ($t in $targets) {
@@ -237,6 +313,8 @@ function Test-Install-Package {
 		return
 	}
 
+	Start-ScreenshotLoop -Folder $Global:ScreenshotFolder -Verbose
+
 	Write-Color "Getting list of packages before install test..." -Foreground Blue
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
@@ -308,6 +386,8 @@ function Test-Install-Package {
 	} else {
 		Write-Warning "There is no change in list of packages, it's probably all good."
 	}
+
+	Stop-ScreenshotLoop -Verbose
 }
 
 function Main {
