@@ -49,7 +49,11 @@ jobs:
 
           if (-not $packageChanged) {
             Write-Output "No package changes detected"
-            $folder = ""
+            if ($itselfChanged) {
+              $folder = "py7z"
+            } else {
+              $folder = ""
+            }
           } else {
             $folder = $packageChanged  | ForEach-Object {
               $parts = $_ -split "/"
