@@ -108,4 +108,4 @@ jobs:
           if-no-files-found: ignore
           compression-level: 9
           path: |
-            .ss/**
+            ./_ss/
