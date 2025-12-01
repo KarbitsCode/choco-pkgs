@@ -49,11 +49,7 @@ jobs:
 
           if (-not $packageChanged) {
             Write-Output "No package changes detected"
-            if ($itselfChanged) {
-              $folder = "py7z"
-            } else {
-              $folder = ""
-            }
+            $folder = ""
           } else {
             $folder = $packageChanged  | ForEach-Object {
               $parts = $_ -split "/"
@@ -93,18 +89,24 @@ jobs:
         run: |
           .\test.ps1 ${{ needs.detect.outputs.folder }}
 
-      - name: Debug directory
+      - name: Prepare artifact name
+        id: artifact
+        if: always()
+        shell: pwsh
         run: |
-          echo "PWD:" %cd%
-          echo "Listing:"
-          dir
-          dir .\.ss\
+          $folder = "${{ needs.detect.outputs.folder }}"
+          if ($folder) {
+            $name = "-${{ needs.detect.outputs.folder }}".Replace("/", "-")
+          } else {
+            $name = ""
+          }
+          echo "artifact_name=$name" >> $env:GITHUB_OUTPUT
 
       - name: Upload artifact
         uses: actions/upload-artifact@v5.0.0
         if: always()
         with:
-          name: screenshots
+          name: screenshots${{ steps.artifact.outputs.artifact_name }}
           if-no-files-found: ignore
           compression-level: 9
           path: |
