@@ -96,7 +96,7 @@ jobs:
         run: |
           $folder = "${{ needs.detect.outputs.folder }}"
           if ($folder) {
-            $name = "-${{ needs.detect.outputs.folder }}".Replace("/", "-")
+            $name = "-${{ needs.detect.outputs.folder }}".Replace("/", "-").Replace(" ", "-")
           } else {
             $name = ""
           }
