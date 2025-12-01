@@ -89,6 +89,14 @@ jobs:
         run: |
           .\test.ps1 ${{ needs.detect.outputs.folder }}
 
+      - name: Debug directory
+        run: |
+          echo "PWD:" %cd%
+          echo "Listing:"
+          dir
+          dir /a
+          dir .\.ss\
+
       - name: Upload artifact
         uses: actions/upload-artifact@v5.0.0
         if: always()
