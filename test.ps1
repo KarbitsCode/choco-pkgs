@@ -31,7 +31,7 @@ function Write-Color {
 }
 
 $Script:ScreenshotJob = $null
-$Script:ScreenshotFolder = ".\.ss\"
+$Script:ScreenshotFolder = ".\_ss\"
 
 function Start-ScreenshotLoop {
 	[CmdletBinding(SupportsShouldProcess = $true)]
