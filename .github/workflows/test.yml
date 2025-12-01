@@ -94,7 +94,6 @@ jobs:
           echo "PWD:" %cd%
           echo "Listing:"
           dir
-          dir /a
           dir .\.ss\
 
       - name: Upload artifact
@@ -105,4 +104,4 @@ jobs:
           if-no-files-found: ignore
           compression-level: 9
           path: |
-            ./.ss/
+            .ss/**
