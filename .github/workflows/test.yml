@@ -31,6 +31,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6.0.0
 
+      - name: Remove old artifacts
+        uses: c-hive/gha-remove-artifacts@v1.4.0
+        with:
+          age: '1 day'
+          skip-recent: 0
+
       - name: Detect changed folder
         id: detect
         shell: pwsh
@@ -81,3 +87,13 @@ jobs:
         shell: pwsh
         run: |
           .\test.ps1 ${{ needs.detect.outputs.folder }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5.0.0
+        if: always()
+        with:
+          name: screenshots
+          if-no-files-found: ignore
+          compression-level: 9
+          path: |
+            .ss/
