@@ -1,7 +1,7 @@
 ﻿$ErrorActionPreference = 'Stop'
 $toolsDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
-# $name: CrystalMark Retro (Install) -> CrystalMark Retro
+# $name: CrystalMark Retro (Portable) -> CrystalMark Retro
 $name = $($env:ChocolateyPackageTitle -replace '\s*\(.*?\)', '')
 # $fileName: CrystalMark Retro -> CrystalMarkRetro
 $fileName = $($name -replace '\s+', '')
