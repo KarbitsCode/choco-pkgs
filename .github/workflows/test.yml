@@ -97,8 +97,8 @@ jobs:
         shell: pwsh
         run: |
           $folder = "${{ needs.detect.outputs.folder }}"
-          if ($folder) {
-            $name = "-${{ needs.detect.outputs.folder }}".Replace("/", "-").Replace(" ", "-")
+          if ($folder -and $folder -notmatch '\s') {
+            $name = "-folder".Replace("/", "-")
           } else {
             $name = ""
           }
