@@ -223,7 +223,7 @@ function Get-Installer {
 	}
 }
 
-function Test-Package-Args {
+function Get-Installer2 {
 	param (
 		[string]$PackageDir
 	)
@@ -300,7 +300,7 @@ function Test-Validation-Package {
 
 			cnc $dir
 			Get-Installer $dir
-			Test-Package-Args $dir
+			Get-Installer2 $dir
 			choco pack $file
 		}
 	}
