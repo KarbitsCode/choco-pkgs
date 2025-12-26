@@ -172,119 +172,183 @@ function Get-Dependencies {
 	return $allDeps | Sort-Object Id, Version -Unique
 }
 
-function Get-Installer {
+function Get-InstallerDisplayName {
+	param (
+		[string]$Url,
+		[string]$OutputFile
+	)
+
+	if ($OutputFile) {
+		return [System.IO.Path]::GetFileName($OutputFile)
+	}
+
+	return [System.IO.Path]::GetFileName($Url)
+}
+
+function Get-InstallerInfoFromVerification {
 	param (
 		[string]$PackageDir
 	)
 
-	# Try to find VERIFICATION.txt in common folders
-	$verificationFile = Get-ChildItem -Path $PackageDir -Recurse -Filter "VERIFICATION.txt" -File -ErrorAction SilentlyContinue | Where-Object { $_.Directory.Name -in @("tools","legal") } | Select-Object -First 1 -ExpandProperty FullName
-	if (-not $verificationFile -or -not (Test-Path $verificationFile)) {
-		Write-Warning "No VERIFICATION.txt found in $PackageDir, skipping download."
-		return
+	$verificationFile = Get-ChildItem -Path $PackageDir -Recurse -Filter "VERIFICATION.txt" -File -ErrorAction SilentlyContinue |
+		Where-Object { $_.Directory.Name -in @("tools","legal") } |
+		Select-Object -First 1
+
+	if (-not $verificationFile) {
+		return $null
 	}
 
-	$content = Get-Content $verificationFile
+	$content = Get-Content $verificationFile.FullName
 
-	$url = ($content | Select-String -Pattern '^  URL: <(.*)>$').Matches.Groups[1].Value
-
+	$url = ($content | Select-String '^  URL: <(.*)>$').Matches.Groups[1].Value
 	if (-not $url) {
-		Write-Warning "No URL found in VERIFICATION.txt at $PackageDir"
-		return
+		return $null
 	}
 
-	$checksumType = ($content | Select-String -Pattern '^  checksum_type: (.*)$').Matches.Groups[1].Value
-	$expectedChecksum = ($content | Select-String -Pattern '^  file_checksum: (.*)$').Matches.Groups[1].Value.ToUpper()
-	# $actualChecksum = $(Get-RemoteChecksum -Url $url -Algorithm $checksumType).ToUpper()
+	$checksumType = ($content | Select-String '^  checksum_type: (.*)$').Matches.Groups[1].Value
+	$checksum     = ($content | Select-String '^  file_checksum: (.*)$').Matches.Groups[1].Value
 
 	$toolsDir = Join-Path $PackageDir "tools"
-	if (-not (Test-Path $toolsDir)) {
-		New-Item -ItemType Directory -Path $toolsDir | Out-Null
-	}
-	$outFile = Join-Path $toolsDir ([System.IO.Path]::GetFileName($url))
+	$outFile  = Join-Path $toolsDir (Get-InstallerDisplayName($url))
 
-	Write-Output "Downloading $url to $outFile..."
-	curl.exe -L $url -o $outFile
-
-	if ($checksumType -and $expectedChecksum) {
-		Write-Output "Verifying $outFile..."
-		$actualChecksum = (Get-FileHash -Path $outFile -Algorithm $checksumType).Hash.ToUpper()
-
-		Write-Output "Expected checksum: $expectedChecksum"
-		Write-Output "Actual checksum:   $actualChecksum"
-
-		if ($actualChecksum -eq $expectedChecksum) {
-			Write-Color "Checksum verification passed for $outFile" -Foreground Green
-		} else {
-			Write-Warning "Checksum verification failed for $outFile"
-		}
-	} else {
-		Write-Warning "No checksum info found, download only."
+	return @{
+		Url          = $url
+		Checksum     = $checksum
+		ChecksumType = $checksumType
+		OutputFile   = $outFile
+		Source       = "VERIFICATION.txt"
 	}
 }
 
-function Get-Installer2 {
+function Get-InstallerInfoFromPackageArgs {
 	param (
 		[string]$PackageDir
 	)
 
 	$installFile = Join-Path $PackageDir "tools\chocolateyInstall.ps1"
 	if (-not (Test-Path $installFile)) {
-		Write-Warning "No chocolateyInstall.ps1 in $PackageDir, skipping checksum test."
-		return
+		return @()
 	}
 
-	# Extract the $packageArgs block text
 	$script = Get-Content $installFile -Raw
-	$match = [regex]::Match($script, '\$packageArgs\s*=\s*@\{([^}]*)\}', 'Singleline')
+	$match  = [regex]::Match($script, '\$packageArgs\s*=\s*@\{([^}]*)\}', 'Singleline')
 	if (-not $match.Success) {
-		Write-Warning "No packageArgs block found in $installFile, skipping checksum test."
-		return
+		return @()
 	}
 
-	# Parse lines into a hashtable (key = value)
-	$hashText = $match.Groups[1].Value
 	$pkgArgs = @{}
-	foreach ($line in ($hashText -split "`r?`n")) {
+	foreach ($line in ($match.Groups[1].Value -split "`r?`n")) {
 		if ($line -match '^\s*([a-zA-Z0-9_]+)\s*=\s*(.+)$') {
-			$key = $matches[1]
-			$val = $matches[2].Trim().Trim("'").Trim('"')
-			$pkgArgs[$key] = $val
+			$pkgArgs[$matches[1]] = $matches[2].Trim("'`"")
 		}
 	}
+
+	$results = @()
 
 	if ($pkgArgs.url -and $pkgArgs.checksum -and $pkgArgs.checksumType) {
-		Write-Color "Checking $($pkgArgs.url) in url" -Foreground Blue
-		$actual = $(Get-RemoteChecksum -Url $pkgArgs.url -Algorithm $pkgArgs.checksumType).ToUpper()
-		$expected = $pkgArgs.checksum.ToUpper()
-
-		Write-Output "Expected checksum: $expected"
-		Write-Output "Actual checksum:   $actual"
-
-		if ($expected -eq $actual) {
-			Write-Color "Checksum verification passed for url: $($pkgArgs.url)" -Foreground Green
-		} else {
-			Write-Warning "Checksum verification failed for url: $($pkgArgs.url)"
+		$results += @{
+			Url          = $pkgArgs.url
+			Checksum     = $pkgArgs.checksum
+			ChecksumType = $pkgArgs.checksumType
+			Source       = "packageArgs:url"
 		}
-	} else {
-		Write-Warning "No url in packageArgs, skipping checksum test."
 	}
 
 	if ($pkgArgs.url64bit -and $pkgArgs.checksum64 -and $pkgArgs.checksumType64) {
-		Write-Color "Checking $($pkgArgs.url64bit) in url64bit" -Foreground Blue
-		$actual64 = $(Get-RemoteChecksum -Url $pkgArgs.url64bit -Algorithm $pkgArgs.checksumType64).ToUpper()
-		$expected64 = $pkgArgs.checksum64.ToUpper()
-
-		Write-Output "Expected checksum: $expected64"
-		Write-Output "Actual checksum:   $actual64"
-
-		if ($actual64 -eq $expected64) {
-			Write-Color "Checksum verification passed for $($pkgArgs.url64bit) in url64bit" -Foreground Green
-		} else {
-			Write-Warning "Checksum mismatch for url64bit: $($pkgArgs.url64bit)"
+		$results += @{
+			Url          = $pkgArgs.url64bit
+			Checksum     = $pkgArgs.checksum64
+			ChecksumType = $pkgArgs.checksumType64
+			Source       = "packageArgs:url64bit"
 		}
 	}
+
+	return $results
 }
+
+function Test-InstallerChecksum {
+	param (
+		[string]$Url,
+		[string]$Checksum,
+		[string]$ChecksumType,
+		[string]$OutputFile,
+		[string]$Source
+	)
+
+	if (-not ($Url -and $Checksum -and $ChecksumType)) {
+		Write-Warning "No checksum info available ($Source)"
+		return $false
+	}
+
+	$name     = Get-InstallerDisplayName $Url $OutputFile
+	Write-Color "Verifying $name ($Source)..." -Foreground Blue
+
+	$expected = $Checksum.ToUpper()
+	$actual = (Get-RemoteChecksum -Url $Url -Algorithm $ChecksumType).ToUpper()
+
+	Write-Output "Expected checksum: $expected"
+	Write-Output "Actual checksum:   $actual"
+
+	if ($actual -eq $expected) {
+		Write-Color "Checksum verification passed for $name" -Foreground Green
+		return $true
+	} else {
+		Write-Warning "Checksum verification failed for $name"
+		return $false
+	}
+}
+
+function Download-Installer {
+	param (
+		[string]$Url,
+		[string]$OutputFile
+	)
+
+	$dir = Split-Path $OutputFile
+	if (-not (Test-Path $dir)) {
+		New-Item -ItemType Directory -Path $dir | Out-Null
+	}
+
+	Write-Color "Downloading $Url to $OutputFile" -Foreground Blue
+	curl.exe -L $Url -o $OutputFile
+}
+
+function Get-Installer {
+	param (
+		[string]$PackageDir
+	)
+
+	$info = Get-InstallerInfoFromVerification $PackageDir
+	if (-not $info) {
+		Write-Warning "No installer info found"
+		return
+	}
+
+	Download-Installer -Url $info.Url -OutputFile $info.OutputFile
+
+	Test-InstallerChecksum `
+		-Url $info.Url `
+		-Checksum $info.Checksum `
+		-ChecksumType $info.ChecksumType `
+		-OutputFile $info.OutputFile `
+		-Source $info.Source
+}
+
+
+function Get-Installer2 {
+	param (
+		[string]$PackageDir
+	)
+
+	foreach ($info in Get-InstallerInfoFromPackageArgs $PackageDir) {
+		Test-InstallerChecksum `
+			-Url $info.Url `
+			-Checksum $info.Checksum `
+			-ChecksumType $info.ChecksumType `
+			-Source $info.Source
+	}
+}
+
 
 # =================================================================================================
 
