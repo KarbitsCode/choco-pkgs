@@ -349,6 +349,102 @@ function Get-Installer2 {
 	}
 }
 
+function Set-InstallerInfoToVerification {
+	param (
+		[string]$PackageDir,
+		[hashtable]$InstallerInfo
+	)
+
+	$toolsDir = Join-Path $PackageDir "tools"
+	if (-not (Test-Path $toolsDir)) {
+		New-Item -ItemType Directory -Path $toolsDir | Out-Null
+	}
+
+	$verificationFile = Join-Path $toolsDir "VERIFICATION.txt"
+
+	$content = @(
+		'VERIFICATION.txt'
+		''
+		'  URL: <{0}>' -f $InstallerInfo.Url
+		'  checksum_type: {0}' -f $InstallerInfo.ChecksumType
+		'  file_checksum: {0}' -f $InstallerInfo.Checksum
+	)
+
+	Set-Content -Path $verificationFile -Value $content -Encoding UTF8
+
+	Write-Output "Updated VERIFICATION.txt in $toolsDir"
+}
+
+function Set-InstallerInfoToPackageArgs {
+	param (
+		[string]$PackageDir,
+		[hashtable]$InstallerInfo
+	)
+	
+	function Set-PackageArgsValue {
+		param (
+			[string]$ScriptText,
+			[string]$Key,
+			[string]$Value
+		)
+
+		if ($ScriptText -match "($Key\s*=\s*)['""]?[^`r`n]+") {
+			return [regex]::Replace(
+				$ScriptText,
+				"($Key\s*=\s*)['""]?[^`r`n]+",
+				"`$1'$Value'"
+			)
+		}
+
+		return $ScriptText -replace '\$packageArgs\s*=\s*@\{',
+			"`$packageArgs = @{`r`n    $Key = '$Value'"
+	}
+
+	$installFile = Join-Path $PackageDir "tools\chocolateyInstall.ps1"
+	if (-not (Test-Path $installFile)) {
+		throw "chocolateyInstall.ps1 not found"
+	}
+
+	$script = Get-Content $installFile -Raw
+
+	switch ($InstallerInfo.Source) {
+		'packageArgs:url' {
+			$script = Set-PackageArgsValue $script 'url'          $InstallerInfo.Url
+			$script = Set-PackageArgsValue $script 'checksum'     $InstallerInfo.Checksum
+			$script = Set-PackageArgsValue $script 'checksumType' $InstallerInfo.ChecksumType
+		}
+		'packageArgs:url64bit' {
+			$script = Set-PackageArgsValue $script 'url64bit'       $InstallerInfo.Url
+			$script = Set-PackageArgsValue $script 'checksum64'     $InstallerInfo.Checksum
+			$script = Set-PackageArgsValue $script 'checksumType64' $InstallerInfo.ChecksumType
+		}
+		default {
+			throw "Unsupported source: $($InstallerInfo.Source)"
+		}
+	}
+
+	Set-Content -Path $installFile -Value $script -Encoding UTF8
+	Write-Output "Updated chocolateyInstall.ps1 ($($InstallerInfo.Source))"
+}
+
+function Set-InstallerInfo {
+	param (
+		[string]$PackageDir,
+		[hashtable]$InstallerInfo
+	)
+
+	switch -Wildcard ($InstallerInfo.Source) {
+		'VERIFICATION*' {
+			Set-InstallerInfoToVerification $PackageDir $InstallerInfo
+		}
+		'packageArgs*' {
+			Set-InstallerInfoToPackageArgs $PackageDir $InstallerInfo
+		}
+		default {
+			throw "Unknown installer info source"
+		}
+	}
+}
 
 # =================================================================================================
 
