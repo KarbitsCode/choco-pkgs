@@ -355,24 +355,42 @@ function Set-InstallerInfoToVerification {
 		[hashtable]$InstallerInfo
 	)
 
-	$toolsDir = Join-Path $PackageDir "tools"
-	if (-not (Test-Path $toolsDir)) {
-		New-Item -ItemType Directory -Path $toolsDir | Out-Null
+	$verificationFile = Get-ChildItem -Path $PackageDir -Recurse -Filter "VERIFICATION.txt" -File -ErrorAction SilentlyContinue |
+		Where-Object { $_.Directory.Name -in @("tools","legal") } |
+		Select-Object -First 1
+
+	if (-not $verificationFile) {
+		throw "VERIFICATION.txt not found"
 	}
 
-	$verificationFile = Join-Path $toolsDir "VERIFICATION.txt"
+	$text = Get-Content $verificationFile.FullName -Raw
 
-	$content = @(
-		'VERIFICATION.txt'
-		''
-		'  URL: <{0}>' -f $InstallerInfo.Url
-		'  checksum_type: {0}' -f $InstallerInfo.ChecksumType
-		'  file_checksum: {0}' -f $InstallerInfo.Checksum
-	)
+	if ($InstallerInfo.Url) {
+		$text = [regex]::Replace(
+			$text,
+			'(?m)^\s*URL:\s*<[^>]+>',
+			"  URL: <$($InstallerInfo.Url)>"
+		)
+	}
 
-	Set-Content -Path $verificationFile -Value $content -Encoding UTF8
+	if ($InstallerInfo.ChecksumType) {
+		$text = [regex]::Replace(
+			$text,
+			'(?m)^\s*checksum_type:\s*\S+',
+			"  checksum_type: $($InstallerInfo.ChecksumType)"
+		)
+	}
 
-	Write-Output "Updated VERIFICATION.txt in $toolsDir"
+	if ($InstallerInfo.Checksum) {
+		$text = [regex]::Replace(
+			$text,
+			'(?m)^\s*file_checksum:\s*\S+',
+			"  file_checksum: $($InstallerInfo.Checksum)"
+		)
+	}
+
+	Set-Content -Path $verificationFile.FullName -Value $text -Encoding UTF8
+	Write-Output "Updated VERIFICATION.txt (in-place)"
 }
 
 function Set-InstallerInfoToPackageArgs {
