@@ -349,6 +349,25 @@ function Get-Installer2 {
 	}
 }
 
+function Normalize-TrailingLines {
+	param (
+		[string]$Path
+	)
+
+	if (-not (Test-Path $Path)) {
+		return
+	}
+
+	$text = Get-Content -Path $Path -Raw
+
+	# Normalize CRLF / LF, trim excessive newlines
+	$eol = if ($text -match "`r`n") { "`r`n" } else { "`n" }
+	$text = $text -replace '(\r?\n)+$', ''
+	$text += $eol
+
+	[System.IO.File]::WriteAllText($Path, $text, [Text.Encoding]::UTF8)
+}
+
 function Set-InstallerInfoToVerification {
 	param (
 		[string]$PackageDir,
@@ -390,6 +409,7 @@ function Set-InstallerInfoToVerification {
 	}
 
 	Set-Content -Path $verificationFile.FullName -Value $text -Encoding UTF8
+	Normalize-TrailingLines $verificationFile.FullName
 	Write-Output "Updated VERIFICATION.txt (in-place)"
 }
 
@@ -442,6 +462,7 @@ function Set-InstallerInfoToPackageArgs {
 	}
 
 	Set-Content -Path $installFile -Value $script -Encoding UTF8
+	Normalize-TrailingLines $installFile
 	Write-Output "Updated chocolateyInstall.ps1 ($($InstallerInfo.Source))"
 }
 
