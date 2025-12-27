@@ -2,16 +2,21 @@ param (
 	[Parameter(Mandatory = $true, Position = 1)]
 	[string]$packageFolder,
 	[Parameter(Mandatory = $true, Position = 2)]
-	[string]$newVersion
+	[string]$newVersion,
+	[switch]$Overwrite
 )
 
 . "$PSScriptRoot\test.ps1"
 Push-Location $packageFolder
 
 $newFolder = Join-Path "$(Get-Location)" $newVersion
-if (Test-Path $newFolder) {
+if ((-not $Overwrite) -and (Test-Path $newFolder)) {
 	Write-Warning "Folder with version $newVersion already exists, skipping..."
 } else {
+	if ($Overwrite) {
+		Remove-Item -Path $newFolder -Recurse -Verbose -ErrorAction SilentlyContinue
+	}
+
 	Write-Color "Getting latest version locally..." -Foreground Blue
 	$existingVersions = Get-ChildItem -Directory | Where-Object { $_.Name -match '^\d+\.\d+\.\d+(\.\d+)?$' } | Sort-Object { [Version]$_.Name }
 	$previousVersion = $existingVersions[-1].Name
@@ -19,7 +24,7 @@ if (Test-Path $newFolder) {
 	Write-Color "Found local version: $previousVersion" -Foreground Green
 
 	Write-Color "Cloning folder: $previousVersion -> $newVersion" -Foreground Blue
-	Copy-Item $previousFolder $newFolder -Recurse -Verbose
+	Copy-Item -Path $previousFolder $newFolder -Recurse -Verbose
 	Write-Color "Done cloning folder: $newVersion" -Foreground Green
 
 	Write-Color "Replacing version data to $newVersion..." -Foreground Blue
@@ -77,7 +82,7 @@ if (Test-Path $newFolder) {
 		}
 	}
 
-	Write-Color "Successfully updated $packageFolder to version $newVersion" -Foreground Green
+	Write-Color "Successfully updated $($packageFolder.Trim('\', '.')) to version $newVersion" -Foreground Green
 }
 
 Pop-Location
