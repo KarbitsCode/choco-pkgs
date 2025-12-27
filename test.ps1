@@ -368,7 +368,7 @@ function Set-InstallerInfoToVerification {
 	if ($InstallerInfo.Url) {
 		$text = [regex]::Replace(
 			$text,
-			'(?m)^\s*URL:\s*<[^>]+>',
+			'(?m)^(\s*URL:\s*<)[^>]+(>)',
 			"  URL: <$($InstallerInfo.Url)>"
 		)
 	}
@@ -376,15 +376,15 @@ function Set-InstallerInfoToVerification {
 	if ($InstallerInfo.ChecksumType) {
 		$text = [regex]::Replace(
 			$text,
-			'(?m)^\s*checksum_type:\s*\S+',
-			"  checksum_type: $($InstallerInfo.ChecksumType)"
+			'(?m)^([ \t]*checksum_type:[ \t]*)\S+',
+			"`$1$($InstallerInfo.ChecksumType)"
 		)
 	}
 
 	if ($InstallerInfo.Checksum) {
 		$text = [regex]::Replace(
 			$text,
-			'(?m)^\s*file_checksum:\s*\S+',
+			'(?m)^(\s*file_checksum:\s*)\S+',
 			"  file_checksum: $($InstallerInfo.Checksum)"
 		)
 	}
