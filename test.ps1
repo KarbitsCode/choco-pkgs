@@ -423,7 +423,7 @@ function Set-InstallerInfoToPackageArgs {
 		[hashtable]$InstallerInfo
 	)
 
-	function Set-PackageArgsValue {
+	function Update-PackageArgsValue {
 		param (
 			[string]$ScriptText,
 			[string]$Key,
@@ -451,14 +451,14 @@ function Set-InstallerInfoToPackageArgs {
 
 	switch ($InstallerInfo.Source) {
 		'packageArgs:url' {
-			$script = Set-PackageArgsValue -ScriptText $script -Key 'url'          -Value $InstallerInfo.Url
-			$script = Set-PackageArgsValue -ScriptText $script -Key 'checksum'     -Value $InstallerInfo.Checksum
-			$script = Set-PackageArgsValue -ScriptText $script -Key 'checksumType' -Value $InstallerInfo.ChecksumType
+			$script = Update-PackageArgsValue -ScriptText $script -Key 'url'          -Value $InstallerInfo.Url
+			$script = Update-PackageArgsValue -ScriptText $script -Key 'checksum'     -Value $InstallerInfo.Checksum
+			$script = Update-PackageArgsValue -ScriptText $script -Key 'checksumType' -Value $InstallerInfo.ChecksumType
 		}
 		'packageArgs:url64bit' {
-			$script = Set-PackageArgsValue -ScriptText $script -Key 'url64bit'       -Value $InstallerInfo.Url
-			$script = Set-PackageArgsValue -ScriptText $script -Key 'checksum64'     -Value $InstallerInfo.Checksum
-			$script = Set-PackageArgsValue -ScriptText $script -Key 'checksumType64' -Value $InstallerInfo.ChecksumType
+			$script = Update-PackageArgsValue -ScriptText $script -Key 'url64bit'       -Value $InstallerInfo.Url
+			$script = Update-PackageArgsValue -ScriptText $script -Key 'checksum64'     -Value $InstallerInfo.Checksum
+			$script = Update-PackageArgsValue -ScriptText $script -Key 'checksumType64' -Value $InstallerInfo.ChecksumType
 		}
 		default {
 			throw "Unsupported source: $($InstallerInfo.Source)"
