@@ -82,6 +82,10 @@ if ((-not $Overwrite) -and (Test-Path $newFolder)) {
 		}
 	}
 
+	Write-Color "Refactor $newVersion with CNC.ps1..." -Foreground Blue
+	cnc $newFolder -UpdateAll -MakeBackups
+	Write-Color "Done refactor $newVersion with CNC.ps1" -Foreground Green
+
 	Write-Color "Successfully updated $($packageFolder.Trim('\', '.')) to version $newVersion" -Foreground Green
 }
 
