@@ -484,15 +484,13 @@ function Set-InstallerInfo {
 			Set-InstallerInfoToVerification `
 				-PackageDir $PackageDir `
 				-InstallerInfo $InstallerInfo `
-				-WhatIf:$WhatIfPreference `
-				-Confirm:$ConfirmPreference
+				-WhatIf:$WhatIfPreference
 		}
 		'packageArgs*' {
 			Set-InstallerInfoToPackageArgs `
 				-PackageDir $PackageDir `
 				-InstallerInfo $InstallerInfo `
-				-WhatIf:$WhatIfPreference `
-				-Confirm:$ConfirmPreference
+				-WhatIf:$WhatIfPreference
 		}
 		default {
 			throw "Unknown installer info source"
