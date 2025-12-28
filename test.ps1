@@ -298,7 +298,7 @@ function Test-InstallerChecksum {
 	}
 }
 
-function Download-Installer {
+function Get-InstallerFromWeb {
 	param (
 		[string]$Url,
 		[string]$OutputFile
@@ -313,7 +313,7 @@ function Download-Installer {
 	curl.exe -L $Url -o $OutputFile
 }
 
-function Get-Installer {
+function Test-PackageChecksum {
 	param (
 		[string]$PackageDir
 	)
@@ -324,7 +324,7 @@ function Get-Installer {
 		return
 	}
 
-	Download-Installer -Url $info.Url -OutputFile $info.OutputFile
+	Get-InstallerFromWeb -Url $info.Url -OutputFile $info.OutputFile
 
 	Test-InstallerChecksum `
 		-Url $info.Url `
@@ -335,7 +335,7 @@ function Get-Installer {
 }
 
 
-function Get-Installer2 {
+function Test-PackageChecksum2 {
 	param (
 		[string]$PackageDir
 	)
@@ -513,8 +513,8 @@ function Test-Validation-Package {
 			$file = $_.FullName
 
 			cnc $dir
-			Get-Installer $dir
-			Get-Installer2 $dir
+			Test-PackageChecksum $dir
+			Test-PackageChecksum2 $dir
 			choco pack $file
 		}
 	}
