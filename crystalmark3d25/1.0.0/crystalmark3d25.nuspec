@@ -48,7 +48,9 @@ This is a nuspec. It mostly adheres to https://docs.nuget.org/create/Nuspec-Refe
     <tags>crystalmark3d25 benchmark crystal mark utility ssd hdd cpu gpu disk gdi opengl</tags>
     <summary>CrystalMark 3D25 is a 3D benchmarking software that allows you to easily measure 3D performance (GLSL/WebGL) with a single click.</summary>
     <description>CrystalMark 3D25 is a 3D benchmarking software that allows you to easily measure 3D performance (GLSL/WebGL) with a single click.
-This was developed with the goal of showcasing the appeal of the demo scene to PC enthusiasts (benchmarkers) worldwide, featuring works provided by demo scene creators who support Japan’s demo scene.</description>
+This was developed with the goal of showcasing the appeal of the demo scene to PC enthusiasts (benchmarkers) worldwide, featuring works provided by demo scene creators who support Japan’s demo scene.
+
+![CrystalMark 3D25](https://crystalmark.info/en/wp-content/uploads/sites/3/image-4.png)</description>
     <releaseNotes>https://crystalmark.info/en/software/crystalmark3d25/crystalmark3d25-history/</releaseNotes>
     <!-- =============================== -->
     <!-- Specifying dependencies and version ranges? https://docs.nuget.org/create/versioning#specifying-version-ranges-in-.nuspec-files -->
