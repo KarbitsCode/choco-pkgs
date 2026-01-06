@@ -143,36 +143,7 @@ function Get-RemoteChecksum {
 	return $res.ToLower()
 }
 
-function Get-Dependencies {
-	param(
-		[string[]]$PackageDir
-	)
-
-	$allDeps = @()
-
-	# Process all nuspec files recursively
-	foreach ($nuspecFile in Get-ChildItem -Path $PackageDir -Recurse -Filter *.nuspec) {
-		try {
-			[xml]$xml = Get-Content $nuspecFile.FullName -Raw
-
-			# Get id and version from <dependency> nodes
-			$xml.package.metadata.dependencies.dependency | ForEach-Object {
-				if ($_.id) {
-					$allDeps += [PSCustomObject]@{
-						Id	  = $_.id
-						Version = $_.version
-					}
-				}
-			}
-		} catch {
-			Write-Warning "Failed to read $($nuspecFile.FullName)"
-		}
-	}
-
-	return $allDeps | Sort-Object Id, Version -Unique
-}
-
-function Get-InstallerDisplayName {
+function Get-OnlyFileName {
 	param (
 		[string]$Url,
 		[string]$OutputFile
@@ -183,170 +154,6 @@ function Get-InstallerDisplayName {
 	}
 
 	return [System.IO.Path]::GetFileName($Url)
-}
-
-function Get-InstallerInfoFromVerification {
-	param (
-		[string]$PackageDir
-	)
-
-	$verificationFile = Get-ChildItem -Path $PackageDir -Recurse -Filter "VERIFICATION.txt" -File -ErrorAction SilentlyContinue |
-		Where-Object { $_.Directory.Name -in @("tools","legal") } |
-		Select-Object -First 1
-
-	if (-not $verificationFile) {
-		return $null
-	}
-
-	$content = Get-Content $verificationFile.FullName
-
-	$url = ($content | Select-String '^  URL: <(.*)>$').Matches.Groups[1].Value
-	if (-not $url) {
-		return $null
-	}
-
-	$checksumType = ($content | Select-String '^  checksum_type: (.*)$').Matches.Groups[1].Value
-	$checksum     = ($content | Select-String '^  file_checksum: (.*)$').Matches.Groups[1].Value
-
-	$toolsDir = Join-Path $PackageDir "tools"
-	$outFile  = Join-Path $toolsDir (Get-InstallerDisplayName($url))
-
-	return @{
-		Url          = $url
-		Checksum     = $checksum
-		ChecksumType = $checksumType
-		OutputFile   = $outFile
-		Source       = "VERIFICATION.txt"
-	}
-}
-
-function Get-InstallerInfoFromPackageArgs {
-	param (
-		[string]$PackageDir
-	)
-
-	$installFile = Join-Path $PackageDir "tools\chocolateyInstall.ps1"
-	if (-not (Test-Path $installFile)) {
-		return @()
-	}
-
-	$script = Get-Content $installFile -Raw
-	$match  = [regex]::Match($script, '\$packageArgs\s*=\s*@\{([^}]*)\}', 'Singleline')
-	if (-not $match.Success) {
-		return @()
-	}
-
-	$pkgArgs = @{}
-	foreach ($line in ($match.Groups[1].Value -split "`r?`n")) {
-		if ($line -match '^\s*([a-zA-Z0-9_]+)\s*=\s*(.+)$') {
-			$pkgArgs[$matches[1]] = $matches[2].Trim("'`"")
-		}
-	}
-
-	$results = @()
-
-	if ($pkgArgs.url -and $pkgArgs.checksum -and $pkgArgs.checksumType) {
-		$results += @{
-			Url          = $pkgArgs.url
-			Checksum     = $pkgArgs.checksum
-			ChecksumType = $pkgArgs.checksumType
-			Source       = "packageArgs:url"
-		}
-	}
-
-	if ($pkgArgs.url64bit -and $pkgArgs.checksum64 -and $pkgArgs.checksumType64) {
-		$results += @{
-			Url          = $pkgArgs.url64bit
-			Checksum     = $pkgArgs.checksum64
-			ChecksumType = $pkgArgs.checksumType64
-			Source       = "packageArgs:url64bit"
-		}
-	}
-
-	return $results
-}
-
-function Test-InstallerChecksum {
-	param (
-		[string]$Url,
-		[string]$Checksum,
-		[string]$ChecksumType,
-		[string]$OutputFile,
-		[string]$Source
-	)
-
-	if (-not ($Url -and $Checksum -and $ChecksumType)) {
-		Write-Warning "No checksum info available ($Source)"
-		return $false
-	}
-
-	$name     = Get-InstallerDisplayName $Url $OutputFile
-	Write-Color "Verifying $name ($Source)..." -Foreground Blue
-
-	$expected = $Checksum.ToUpper()
-	$actual = (Get-RemoteChecksum -Url $Url -Algorithm $ChecksumType).ToUpper()
-
-	Write-Output "Expected checksum: $expected"
-	Write-Output "Actual checksum:   $actual"
-
-	if ($actual -eq $expected) {
-		Write-Color "Checksum verification passed for $name" -Foreground Green
-		return $true
-	} else {
-		Write-Warning "Checksum verification failed for $name"
-		return $false
-	}
-}
-
-function Get-InstallerFromWeb {
-	param (
-		[string]$Url,
-		[string]$OutputFile
-	)
-
-	$dir = Split-Path $OutputFile
-	if (-not (Test-Path $dir)) {
-		New-Item -ItemType Directory -Path $dir | Out-Null
-	}
-
-	Write-Color "Downloading $Url to $OutputFile" -Foreground Blue
-	curl.exe -L $Url -o $OutputFile
-}
-
-function Test-PackageChecksum {
-	param (
-		[string]$PackageDir
-	)
-
-	$info = Get-InstallerInfoFromVerification $PackageDir
-	if (-not $info) {
-		Write-Warning "No installer info found"
-		return
-	}
-
-	Get-InstallerFromWeb -Url $info.Url -OutputFile $info.OutputFile
-
-	Test-InstallerChecksum `
-		-Url $info.Url `
-		-Checksum $info.Checksum `
-		-ChecksumType $info.ChecksumType `
-		-OutputFile $info.OutputFile `
-		-Source $info.Source
-}
-
-
-function Test-PackageChecksum2 {
-	param (
-		[string]$PackageDir
-	)
-
-	foreach ($info in Get-InstallerInfoFromPackageArgs $PackageDir) {
-		Test-InstallerChecksum `
-			-Url $info.Url `
-			-Checksum $info.Checksum `
-			-ChecksumType $info.ChecksumType `
-			-Source $info.Source
-	}
 }
 
 function Normalize-TrailingLines {
@@ -367,6 +174,8 @@ function Normalize-TrailingLines {
 
 	[System.IO.File]::WriteAllText($Path, $text, [Text.Encoding]::UTF8)
 }
+
+# =================================================================================================
 
 function Set-InstallerInfoToVerification {
 	[CmdletBinding(SupportsShouldProcess = $true)]
@@ -500,6 +309,196 @@ function Set-InstallerInfo {
 
 # =================================================================================================
 
+function Get-InstallerInfoFromVerification {
+	param (
+		[string]$PackageDir
+	)
+
+	$verificationFile = Get-ChildItem -Path $PackageDir -Recurse -Filter "VERIFICATION.txt" -File -ErrorAction SilentlyContinue |
+		Where-Object { $_.Directory.Name -in @("tools","legal") } |
+		Select-Object -First 1
+
+	if (-not $verificationFile) {
+		return $null
+	}
+
+	$content = Get-Content $verificationFile.FullName
+
+	$url = ($content | Select-String '^  URL: <(.*)>$').Matches.Groups[1].Value
+	if (-not $url) {
+		return $null
+	}
+
+	$checksumType = ($content | Select-String '^  checksum_type: (.*)$').Matches.Groups[1].Value
+	$checksum     = ($content | Select-String '^  file_checksum: (.*)$').Matches.Groups[1].Value
+
+	$toolsDir = Join-Path $PackageDir "tools"
+	$outFile  = Join-Path $toolsDir (Get-OnlyFileName($url))
+
+	return @{
+		Url          = $url
+		Checksum     = $checksum
+		ChecksumType = $checksumType
+		OutputFile   = $outFile
+		Source       = "VERIFICATION.txt"
+	}
+}
+
+function Get-InstallerInfoFromPackageArgs {
+	param (
+		[string]$PackageDir
+	)
+
+	$installFile = Join-Path $PackageDir "tools\chocolateyInstall.ps1"
+	if (-not (Test-Path $installFile)) {
+		return @()
+	}
+
+	$script = Get-Content $installFile -Raw
+	$match  = [regex]::Match($script, '\$packageArgs\s*=\s*@\{([^}]*)\}', 'Singleline')
+	if (-not $match.Success) {
+		return @()
+	}
+
+	$pkgArgs = @{}
+	foreach ($line in ($match.Groups[1].Value -split "`r?`n")) {
+		if ($line -match '^\s*([a-zA-Z0-9_]+)\s*=\s*(.+)$') {
+			$pkgArgs[$matches[1]] = $matches[2].Trim("'`"")
+		}
+	}
+
+	$results = @()
+
+	if ($pkgArgs.url -and $pkgArgs.checksum -and $pkgArgs.checksumType) {
+		$results += @{
+			Url          = $pkgArgs.url
+			Checksum     = $pkgArgs.checksum
+			ChecksumType = $pkgArgs.checksumType
+			Source       = "packageArgs:url"
+		}
+	}
+
+	if ($pkgArgs.url64bit -and $pkgArgs.checksum64 -and $pkgArgs.checksumType64) {
+		$results += @{
+			Url          = $pkgArgs.url64bit
+			Checksum     = $pkgArgs.checksum64
+			ChecksumType = $pkgArgs.checksumType64
+			Source       = "packageArgs:url64bit"
+		}
+	}
+
+	return $results
+}
+
+function Get-InstallerFromWeb {
+	param (
+		[string]$Url,
+		[string]$OutputFile
+	)
+
+	$dir = Split-Path $OutputFile
+	if (-not (Test-Path $dir)) {
+		New-Item -ItemType Directory -Path $dir | Out-Null
+	}
+
+	Write-Color "Downloading $Url to $OutputFile" -Foreground Blue
+	curl.exe -L $Url -o $OutputFile
+}
+
+function Get-PackageDependencies {
+	param(
+		[string[]]$PackageDir
+	)
+
+	$allDeps = @()
+
+	# Process all nuspec files recursively
+	foreach ($nuspecFile in Get-ChildItem -Path $PackageDir -Recurse -Filter *.nuspec) {
+		try {
+			[xml]$xml = Get-Content $nuspecFile.FullName -Raw
+
+			# Get id and version from <dependency> nodes
+			$xml.package.metadata.dependencies.dependency | ForEach-Object {
+				if ($_.id) {
+					$allDeps += [PSCustomObject]@{
+						Id	  = $_.id
+						Version = $_.version
+					}
+				}
+			}
+		} catch {
+			Write-Warning "Failed to read $($nuspecFile.FullName)"
+		}
+	}
+
+	return $allDeps | Sort-Object Id, Version -Unique
+}
+
+# =================================================================================================
+
+function Test-InstallerChecksum {
+	param (
+		[string]$Url,
+		[string]$Checksum,
+		[string]$ChecksumType,
+		[string]$OutputFile,
+		[string]$Source
+	)
+
+	if (-not ($Url -and $Checksum -and $ChecksumType)) {
+		Write-Warning "No checksum info available ($Source)"
+		return $false
+	}
+
+	$name     = Get-OnlyFileName $Url $OutputFile
+	Write-Color "Verifying $name ($Source)..." -Foreground Blue
+
+	$expected = $Checksum.ToUpper()
+	$actual = (Get-RemoteChecksum -Url $Url -Algorithm $ChecksumType).ToUpper()
+
+	Write-Output "Expected checksum: $expected"
+	Write-Output "Actual checksum:   $actual"
+
+	if ($actual -eq $expected) {
+		Write-Color "Checksum verification passed for $name" -Foreground Green
+		return $true
+	} else {
+		Write-Warning "Checksum verification failed for $name"
+		return $false
+	}
+}
+
+function Test-PackageChecksum {
+	param (
+		[string]$PackageDir
+	)
+
+	$info = @(
+		Get-InstallerInfoFromVerification $PackageDir
+		Get-InstallerInfoFromPackageArgs  $PackageDir
+	) | Where-Object { $_ }
+
+	if (-not $info) {
+		Write-Warning "No installer info found"
+		return
+	}
+
+	$info | ForEach-Object {
+		if ($_.OutputFile) {
+			Get-InstallerFromWeb -Url $_.Url -OutputFile $_.OutputFile
+		}
+
+		Test-InstallerChecksum `
+			-Url $_.Url `
+			-Checksum $_.Checksum `
+			-ChecksumType $_.ChecksumType `
+			-OutputFile $_.OutputFile `
+			-Source $_.Source
+	}
+}
+
+# =================================================================================================
+
 function Test-Validation-Package {
 	param (
 		[string[]]$funcArgs
@@ -512,7 +511,6 @@ function Test-Validation-Package {
 
 			cnc $dir
 			Test-PackageChecksum $dir
-			Test-PackageChecksum2 $dir
 			choco pack $file
 		}
 	}
@@ -533,7 +531,7 @@ function Test-Install-Package {
 	$installedBefore = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
 	# Gather all nuspec dependency info
-	$deps = Get-Dependencies $funcArgs
+	$deps = Get-PackageDependencies $funcArgs
 	$dirs = Get-ChildItem -Directory | Select-Object -ExpandProperty Name
 
 	foreach ($dep in $deps) {
