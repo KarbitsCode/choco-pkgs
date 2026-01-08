@@ -78,8 +78,8 @@ jobs:
         shell: pwsh
         run: |
           # PowerShell package (as choco-nuspec-checker dependency) need this, see https://github.com/KarbitsCode/choco-pkgs/actions/runs/17194511952/job/48774605367#step:3:28
-          Set-Service -Name 'wuauserv' -StartupType Manual -Verbose
-          Start-Service -Name 'wuauserv' -Verbose -PassThru
+          Set-Service -Name "wuauserv" -StartupType Manual -Verbose
+          Start-Service -Name "wuauserv" -Verbose -PassThru
 
       - name: Set up chocolatey packages
         uses: crazy-max/ghaction-chocolatey@v3.4.0
@@ -98,8 +98,8 @@ jobs:
         run: |
           $folder = "${{ needs.detect.outputs.folder }}"
           if ($folder) {
-            $first = ($folder -split '\s+')[0]
-            $name = "-" + ($first -replace '/', '-')
+            $first = ($folder -split "\s+")[0]
+            $name = "-" + ($first -replace "/", "-")
           } else {
             $name = ""
           }
