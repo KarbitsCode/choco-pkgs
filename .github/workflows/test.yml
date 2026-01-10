@@ -99,7 +99,7 @@ jobs:
           $folder = "${{ needs.detect.outputs.folder }}"
           if ($folder) {
             $first = ($folder -split "\s+")[0]
-            $name = "-" + ($first -replace "/", "-")
+            $name = "-$($first -replace "[\\/]", "-")"
           } else {
             $name = ""
           }
