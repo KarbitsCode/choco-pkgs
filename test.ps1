@@ -156,7 +156,7 @@ function Get-OnlyFileName {
 	return [System.IO.Path]::GetFileName($Url)
 }
 
-function Normalize-TrailingLines {
+function Format-TrailingLines {
 	param (
 		[string]$Path
 	)
@@ -220,7 +220,7 @@ function Set-InstallerInfoToVerification {
 
 	if ($PSCmdlet.ShouldProcess($verificationFile, "Write VERIFICATION.txt")) {
 		Set-Content -Path $verificationFile.FullName -Value $text -Encoding UTF8
-		Normalize-TrailingLines $verificationFile.FullName
+		Format-TrailingLines $verificationFile.FullName
 		Write-Output "Updated VERIFICATION.txt (in-place)"
 	}
 }
@@ -232,7 +232,7 @@ function Set-InstallerInfoToPackageArgs {
 		[hashtable]$InstallerInfo
 	)
 
-	function Update-PackageArgsValue {
+	function Set-PackageArgsValue {
 		param (
 			[string]$ScriptText,
 			[string]$Key,
@@ -260,14 +260,14 @@ function Set-InstallerInfoToPackageArgs {
 
 	switch ($InstallerInfo.Source) {
 		'packageArgs:url' {
-			$script = Update-PackageArgsValue -ScriptText $script -Key 'url'          -Value $InstallerInfo.Url
-			$script = Update-PackageArgsValue -ScriptText $script -Key 'checksum'     -Value $InstallerInfo.Checksum
-			$script = Update-PackageArgsValue -ScriptText $script -Key 'checksumType' -Value $InstallerInfo.ChecksumType
+			$script = Set-PackageArgsValue -ScriptText $script -Key 'url'          -Value $InstallerInfo.Url
+			$script = Set-PackageArgsValue -ScriptText $script -Key 'checksum'     -Value $InstallerInfo.Checksum
+			$script = Set-PackageArgsValue -ScriptText $script -Key 'checksumType' -Value $InstallerInfo.ChecksumType
 		}
 		'packageArgs:url64bit' {
-			$script = Update-PackageArgsValue -ScriptText $script -Key 'url64bit'       -Value $InstallerInfo.Url
-			$script = Update-PackageArgsValue -ScriptText $script -Key 'checksum64'     -Value $InstallerInfo.Checksum
-			$script = Update-PackageArgsValue -ScriptText $script -Key 'checksumType64' -Value $InstallerInfo.ChecksumType
+			$script = Set-PackageArgsValue -ScriptText $script -Key 'url64bit'       -Value $InstallerInfo.Url
+			$script = Set-PackageArgsValue -ScriptText $script -Key 'checksum64'     -Value $InstallerInfo.Checksum
+			$script = Set-PackageArgsValue -ScriptText $script -Key 'checksumType64' -Value $InstallerInfo.ChecksumType
 		}
 		default {
 			throw "Unsupported source: $($InstallerInfo.Source)"
@@ -276,7 +276,7 @@ function Set-InstallerInfoToPackageArgs {
 
 	if ($PSCmdlet.ShouldProcess($installFile, "Update $($InstallerInfo.Source) in chocolateyInstall.ps1")) {
 		Set-Content -Path $installFile -Value $script -Encoding UTF8
-		Normalize-TrailingLines $installFile
+		Format-TrailingLines $installFile
 		Write-Output "Updated chocolateyInstall.ps1 ($($InstallerInfo.Source))"
 	}
 }

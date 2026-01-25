@@ -47,7 +47,7 @@ if ((-not $Overwrite) -and (Test-Path $newFolder)) {
 
 		if ($content -ne $original) {
 			Set-Content $_.FullName $content -Encoding UTF8 -Verbose
-			Normalize-TrailingLines $_.FullName
+			Format-TrailingLines $_.FullName
 		}
 	}
 	Write-Color "Done replacing version data on all files with $newVersion" -Foreground Green
