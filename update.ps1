@@ -86,6 +86,10 @@ if ((-not $Overwrite) -and (Test-Path $newFolder)) {
 	cnc $newFolder -UpdateAll -MakeBackups
 	Write-Color "Done refactor $newVersion with CNC.ps1" -Foreground Green
 
+	Write-Color "Verifying the installer hash once again..." -Foreground Blue
+	Test-PackageChecksum $newFolder
+	Write-Color "Done verifying package installer hash in $newVersion" -Foreground Green
+
 	Write-Color "Successfully updated $($packageFolder.Trim('\', '.')) to version $newVersion" -Foreground Green
 }
 
