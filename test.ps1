@@ -120,7 +120,7 @@ function Remove-TempFiles {
 
 		foreach ($t in $targets) {
 			if ($PSCmdlet.ShouldProcess($t.FullName, "Remove temp file")) {
-				Remove-Item $t.FullName -Force -ErrorAction SilentlyContinue -Verbose
+				Remove-Item $t.FullName -Force -ErrorAction SilentlyContinue
 			}
 		}
 	}
@@ -450,7 +450,7 @@ function Test-InstallerChecksum {
 		return $false
 	}
 
-	$name     = Get-OnlyFileName $Url $OutputFile
+	$name = Get-OnlyFileName $Url $OutputFile
 	Write-Color "Verifying $name ($Source)..." -Foreground Blue
 
 	$expected = $Checksum.ToUpper()
@@ -525,6 +525,7 @@ function Test-Install-Package {
 		return
 	}
 
+	$testResults = @()
 	Start-ScreenshotLoop -Folder $Script:ScreenshotFolder -Verbose
 
 	Write-Color "Getting list of packages before install test..." -Foreground Blue
@@ -567,6 +568,10 @@ function Test-Install-Package {
 			((($funcArgs.Count -eq 1 -and $funcArgs[0] -eq ".") -and $pkgName -notlike "*.install") -or
 			($funcArgs.Count -ne 1 -or $funcArgs[0] -ne ".")) -and ($deps.Id -notcontains $pkgName)
 		) {
+			$folderPath = "$pkgName\$pkgVersion"
+			$installSuccess = $false
+			$uninstallSuccess = $false
+
 			Write-Color "Getting list of packages before install test..." -Foreground Blue
 			$installedBefore2 = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 
@@ -579,11 +584,25 @@ function Test-Install-Package {
 			$installedAfter2 = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
 			$newlyInstalled2 = @($installedAfter2 | Where-Object { $_ -notin $installedBefore2 })
 
+			# Install success check
 			if ($newlyInstalled2.Length -ne 0) {
+				$installSuccess = $true
 				Write-Color "Uninstalling newly installed packages: $($newlyInstalled2 -join ', ')" -Foreground Blue
 				choco uninstall @newlyInstalled2 --yes
+
+				# Uninstall success check
+				$installedAfterUninstall = choco list --limit-output | ForEach-Object { ($_ -split '\|')[0] }
+				$uninstallSuccess = ($newlyInstalled2 | ForEach-Object { $_ -notin $installedAfterUninstall }) -notcontains $false
 			} else {
+				$installSuccess = $false
+				$uninstallSuccess = $false
 				Write-Warning "There is no change in list of packages, it's possible if this package failed to install."
+			}
+
+			$testResults += [PSCustomObject]@{
+				Folder = $folderPath
+				InstallSuccess = $installSuccess
+				UninstallSuccess = $uninstallSuccess
 			}
 		}
 	}
@@ -600,6 +619,16 @@ function Test-Install-Package {
 	}
 
 	Stop-ScreenshotLoop -Verbose
+
+	if ($testResults.Count -gt 0) {
+		Write-Output ""
+		foreach ($result in $testResults) {
+			Write-Output "Folder: $($result.Folder)"
+			Write-Output "Install succeed: $($result.InstallSuccess)"
+			Write-Output "Uninstall succeed: $($result.UninstallSuccess)"
+			Write-Output ""
+		}
+	}
 }
 
 function Main {
