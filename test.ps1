@@ -621,12 +621,10 @@ function Test-Install-Package {
 	Stop-ScreenshotLoop -Verbose
 
 	if ($testResults.Count -gt 0) {
-		Write-Output ""
 		foreach ($result in $testResults) {
-			Write-Output "Folder: $($result.Folder)"
+			Write-Output "`nFolder: $($result.Folder)"
 			Write-Output "Install succeed: $($result.InstallSuccess)"
 			Write-Output "Uninstall succeed: $($result.UninstallSuccess)"
-			Write-Output ""
 		}
 	}
 }
