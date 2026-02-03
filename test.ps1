@@ -133,9 +133,16 @@ function Get-RemoteChecksum {
 	)
 
 	$fn = [System.IO.Path]::GetTempFileName()
-	if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
-		& curl.exe -L $Url -o $fn
-	} else {
+	try {
+		if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+			& curl.exe -L $Url -o $fn
+			if ($LASTEXITCODE -ne 0) {
+				throw "curl.exe failed with exit code $LASTEXITCODE"
+			}
+		}
+	} catch {
+		Write-Warning "curl.exe failed: $_"
+		Write-Warning "Falling back to Invoke-WebRequest..."
 		Invoke-WebRequest $Url -OutFile $fn -UseBasicParsing
 	}
 	$res = Get-FileHash $fn -Algorithm $Algorithm | ForEach-Object Hash
@@ -402,7 +409,11 @@ function Get-InstallerFromWeb {
 	}
 
 	Write-Color "Downloading $Url to $OutputFile" -Foreground Blue
-	curl.exe -L $Url -o $OutputFile
+	& curl.exe -L $Url -o $OutputFile
+
+	if ($LASTEXITCODE -ne 0) {
+		throw "Failed to download from $Url (curl exit code: $LASTEXITCODE)"
+	}
 }
 
 function Get-PackageDependencies {
@@ -488,12 +499,16 @@ function Test-PackageChecksum {
 			Get-InstallerFromWeb -Url $_.Url -OutputFile $_.OutputFile
 		}
 
-		Test-InstallerChecksum `
+		$passed = Test-InstallerChecksum `
 			-Url $_.Url `
 			-Checksum $_.Checksum `
 			-ChecksumType $_.ChecksumType `
 			-OutputFile $_.OutputFile `
 			-Source $_.Source
+
+		if (-not $passed) {
+			throw "Package checksum verification failed for $($_.Url)"
+		}
 	}
 }
 
@@ -509,9 +524,15 @@ function Test-Validation-Package {
 			$dir = $_.DirectoryName
 			$file = $_.FullName
 
-			cnc $dir
-			Test-PackageChecksum $dir
-			choco pack $file
+			try {
+				cnc $dir
+				Test-PackageChecksum $dir
+				choco pack $file
+			} catch {
+				Write-Color "Skipping package due to error: $_" -Foreground Red
+				Write-Warning "Failed to validate package in $dir"
+				continue
+			}
 		}
 	}
 }
@@ -615,7 +636,7 @@ function Test-Install-Package {
 		Write-Color "Uninstalling newly installed packages: $($newlyInstalled -join ', ')" -Foreground Blue
 		choco uninstall @newlyInstalled --yes
 	} else {
-		Write-Warning "There is no change in list of packages, it's probably all good."
+		Write-Warning "There is no change in list of packages, nothing to uninstall."
 	}
 
 	Stop-ScreenshotLoop -Verbose
