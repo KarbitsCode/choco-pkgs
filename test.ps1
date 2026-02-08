@@ -22,7 +22,7 @@ function Write-Color {
 	process {
 		if ($Foreground) { [System.Console]::ForegroundColor = $Foreground }
 		if ($Background) { [System.Console]::BackgroundColor = $Background }
-		Write-Output $Text
+		Write-Information $Text -InformationAction Continue
 	}
 	end {
 		[System.Console]::ForegroundColor = $script:oldFg
@@ -228,7 +228,7 @@ function Set-InstallerInfoToVerification {
 	if ($PSCmdlet.ShouldProcess($verificationFile, "Write VERIFICATION.txt")) {
 		Set-Content -Path $verificationFile.FullName -Value $text -Encoding UTF8
 		Format-TrailingLines $verificationFile.FullName
-		Write-Output "Updated VERIFICATION.txt (in-place)"
+		Write-Color "Updated VERIFICATION.txt (in-place)"
 	}
 }
 
@@ -284,7 +284,7 @@ function Set-InstallerInfoToPackageArgs {
 	if ($PSCmdlet.ShouldProcess($installFile, "Update $($InstallerInfo.Source) in chocolateyInstall.ps1")) {
 		Set-Content -Path $installFile -Value $script -Encoding UTF8
 		Format-TrailingLines $installFile
-		Write-Output "Updated chocolateyInstall.ps1 ($($InstallerInfo.Source))"
+		Write-Color "Updated chocolateyInstall.ps1 ($($InstallerInfo.Source))"
 	}
 }
 
@@ -467,8 +467,8 @@ function Test-InstallerChecksum {
 	$expected = $Checksum.ToUpper()
 	$actual = (Get-RemoteChecksum -Url $Url -Algorithm $ChecksumType).ToUpper()
 
-	Write-Output "Expected checksum: $expected"
-	Write-Output "Actual checksum:   $actual"
+	Write-Color "Expected checksum: $expected"
+	Write-Color "Actual checksum:   $actual"
 
 	if ($actual -eq $expected) {
 		Write-Color "Checksum verification passed for $name" -Foreground Green
@@ -643,9 +643,9 @@ function Test-Install-Package {
 
 	if ($testResults.Count -gt 0) {
 		foreach ($result in $testResults) {
-			Write-Output "`nFolder: $($result.Folder)"
-			Write-Output "Install succeed: $($result.InstallSuccess)"
-			Write-Output "Uninstall succeed: $($result.UninstallSuccess)"
+			Write-Color "`nFolder: $($result.Folder)"
+			Write-Color "Install succeed: $($result.InstallSuccess)"
+			Write-Color "Uninstall succeed: $($result.UninstallSuccess)"
 		}
 	}
 }
