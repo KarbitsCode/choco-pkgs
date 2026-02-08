@@ -358,13 +358,13 @@ function Get-InstallerInfoFromPackageArgs {
 
 	$installFile = Join-Path $PackageDir "tools\chocolateyInstall.ps1"
 	if (-not (Test-Path $installFile)) {
-		return @()
+		return $null
 	}
 
 	$script = Get-Content $installFile -Raw
 	$match  = [regex]::Match($script, '\$packageArgs\s*=\s*@\{([^}]*)\}', 'Singleline')
 	if (-not $match.Success) {
-		return @()
+		return $null
 	}
 
 	$pkgArgs = @{}
@@ -396,6 +396,21 @@ function Get-InstallerInfoFromPackageArgs {
 
 	return $results
 }
+
+function Get-InstallerInfo {
+	param (
+		[string]$PackageDir
+	)
+
+	$info = @(
+		Get-InstallerInfoFromVerification $PackageDir
+		Get-InstallerInfoFromPackageArgs  $PackageDir
+	) | Where-Object { $_ }
+
+	return $info
+}
+
+# =================================================================================================
 
 function Get-InstallerFromWeb {
 	param (
@@ -484,10 +499,7 @@ function Test-PackageChecksum {
 		[string]$PackageDir
 	)
 
-	$info = @(
-		Get-InstallerInfoFromVerification $PackageDir
-		Get-InstallerInfoFromPackageArgs  $PackageDir
-	) | Where-Object { $_ }
+	$info = Get-InstallerInfo $PackageDir
 
 	if (-not $info) {
 		Write-Warning "No installer info found"

@@ -53,32 +53,30 @@ if ((-not $Overwrite) -and (Test-Path $newFolder)) {
 	Write-Color "Done replacing version data on all files with $newVersion" -Foreground Green
 
 	Write-Color "Retriving package installer info in $newVersion..." -Foreground Blue
-	$info = Get-InstallerInfoFromPackageArgs $newFolder
-	if (-not $info) {
-		$info = Get-InstallerInfoFromVerification $newFolder
-	}
-	if (-not $info) {
+	$allInfo = Get-InstallerInfo $newFolder
+	if (-not $allInfo) {
 		Write-Warning "There's no installer info in package, skipping..."
 	} else {
 		Write-Color "Successfully retrived package installer info from $newVersion" -Foreground Green
-
-		Write-Color "Updating package installer hash in $newVersion..." -Foreground Blue
-		$newChecksum = (Get-RemoteChecksum $info.Url -Algorithm $info.ChecksumType).ToUpper()
-		Write-Color "Got new checksum: $newChecksum" -Foreground Green
-		$newInstallerInfo = @{
+		foreach ($info in $allInfo) {
+			Write-Color "Updating package installer hash in $newVersion ($($info.Source))..." -Foreground Blue
+			$newChecksum = (Get-RemoteChecksum $info.Url -Algorithm $info.ChecksumType).ToUpper()
+			Write-Color "Got new checksum: $newChecksum" -Foreground Green
+			$newInstallerInfo = @{
 								Url          = $info.Url
 								Checksum     = $newChecksum
 								ChecksumType = $info.ChecksumType
 								OutputFile   = ""
 								Source       = $info.Source
 							}
-		Set-InstallerInfo $newFolder $newInstallerInfo
-		Write-Color "Done updating package installer hash in $newVersion" -Foreground Green
+			Set-InstallerInfo $newFolder $newInstallerInfo
+			Write-Color "Done updating package installer hash in $newVersion ($($info.Source))" -Foreground Green
 
-		if ($info.Source -eq "VERIFICATION.txt") {
-			Write-Color "Downloading installer to $newFolder..." -Foreground Blue
-			Download-Installer -Url $info.Url -OutputFile $info.OutputFile
-			Write-Color "Done downloading installer to $($info.OutputFile)" -Foreground Green
+			if ($info.Source -eq "VERIFICATION.txt") {
+				Write-Color "Downloading installer to $newFolder..." -Foreground Blue
+				Get-InstallerFromWeb -Url $info.Url -OutputFile $info.OutputFile
+				Write-Color "Done downloading installer to $($info.OutputFile)" -Foreground Green
+			}
 		}
 	}
 
