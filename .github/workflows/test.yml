@@ -82,7 +82,7 @@ jobs:
           Start-Service -Name "wuauserv" -Verbose -PassThru
 
       - name: Set up chocolatey packages
-        uses: crazy-max/ghaction-chocolatey@v3.4.0
+        uses: crazy-max/ghaction-chocolatey@v4.0.0
         with:
           args: upgrade choco-nuspec-checker chocolatey-au curl -y
 
