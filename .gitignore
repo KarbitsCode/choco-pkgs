@@ -1,0 +1,8 @@
+/*
+!*/
+!.github/
+!.gitignore
+!.gitattributes
+!README.md
+!test.ps1
+!update.ps1
