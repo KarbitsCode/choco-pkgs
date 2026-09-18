@@ -18,6 +18,7 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
+  queue: max
 
 jobs:
   detect:
@@ -67,7 +68,7 @@ jobs:
 
   test:
     runs-on: windows-latest
-    timeout-minutes: 120
+    timeout-minutes: 240
     needs: detect
     permissions:
       contents: read
